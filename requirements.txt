@@ -1,0 +1,11 @@
+flask>=3.0
+werkzeug>=3.0
+requests>=2.31
+urllib3>=2.0
+paramiko>=3.4
+cryptography>=42.0
+WMI>=1.5.1; sys_platform == "win32"
+pywin32>=306; sys_platform == "win32"
+# Opcional: programa de bandeja (bandeja.bat)
+pystray>=0.19; sys_platform == "win32"
+pillow>=10.0; sys_platform == "win32"

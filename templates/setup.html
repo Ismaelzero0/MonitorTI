@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Configuração - Monitor TI</title>
+    <style>
+        :root { --bg:#0f172a; --card:#ffffff; --txt:#1e293b; --mut:#64748b; --pri:#3b82f6; --ok:#16a34a; --err:#dc2626; --warn:#d97706; --bd:#e2e8f0; }
+        * { box-sizing: border-box; }
+        body { margin:0; font-family:'Segoe UI',system-ui,sans-serif; background:var(--bg); color:var(--txt); min-height:100vh; padding:20px 12px; }
+        .wrap { max-width:760px; margin:0 auto; }
+        h1 { color:#fff; font-size:1.5rem; margin:0 0 4px; }
+        .sub { color:#94a3b8; margin:0 0 18px; font-size:.95rem; }
+        .steps { display:flex; gap:6px; margin-bottom:14px; flex-wrap:wrap; }
+        .steps span { flex:1; min-width:70px; text-align:center; padding:6px 4px; border-radius:6px; background:#1e293b; color:#94a3b8; font-size:.72rem; }
+        .steps span.on { background:var(--pri); color:#fff; font-weight:600; }
+        .steps span.done { background:#14532d; color:#bbf7d0; }
+        .card { background:var(--card); border-radius:10px; padding:22px; box-shadow:0 10px 25px rgba(0,0,0,.25); }
+        .card h2 { margin:0 0 6px; font-size:1.2rem; }
+        .card p.d { margin:0 0 16px; color:var(--mut); font-size:.92rem; }
+        label { display:block; font-weight:600; font-size:.85rem; margin:12px 0 4px; }
+        input[type=text], input[type=password], input[type=number], select { width:100%; padding:10px; border:1px solid var(--bd); border-radius:6px; font-size:1rem; font-family:inherit; }
+        .row { display:flex; gap:10px; flex-wrap:wrap; } .row > div { flex:1; min-width:150px; }
+        .chk { display:flex; gap:8px; align-items:flex-start; margin-top:14px; font-weight:400; }
+        .chk input { margin-top:3px; }
+        .btns { display:flex; gap:10px; margin-top:18px; flex-wrap:wrap; }
+        button { padding:10px 16px; border:none; border-radius:6px; font-size:.95rem; font-weight:600; cursor:pointer; }
+        .b-pri { background:var(--pri); color:#fff; } .b-sec { background:#e2e8f0; color:var(--txt); } .b-ghost { background:transparent; color:var(--mut); }
+        button:disabled { opacity:.55; cursor:wait; }
+        .res { margin-top:14px; border-radius:8px; border:1px solid var(--bd); overflow:hidden; display:none; }
+        .res div { padding:9px 12px; font-size:.9rem; border-bottom:1px solid var(--bd); display:flex; gap:8px; }
+        .res div:last-child { border-bottom:none; }
+        .ok { color:var(--ok); } .err { color:var(--err); } .warn { color:var(--warn); }
+        .req { display:flex; justify-content:space-between; align-items:center; gap:10px; padding:10px 0; border-bottom:1px solid var(--bd); flex-wrap:wrap; }
+        .req small { color:var(--mut); display:block; word-break:break-all; }
+        table { width:100%; border-collapse:collapse; font-size:.85rem; margin-top:10px; }
+        th, td { text-align:left; padding:6px; border-bottom:1px solid var(--bd); }
+        .scroll { max-height:260px; overflow:auto; border:1px solid var(--bd); border-radius:6px; }
+        .hide { display:none; }
+        .tag { font-size:.7rem; padding:1px 6px; border-radius:10px; background:#e2e8f0; color:var(--mut); margin-left:6px; }
+    </style>
+</head>
+<body>
+<div class="wrap">
+    <h1>Monitor TI — Configuração</h1>
+    <p class="sub" id="sub"></p>
+    <div class="steps" id="steps"></div>
+    <div class="card" id="card"></div>
+</div>
+
+<script>
+const MODO = {{ modo|tojson }};
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const ETAPAS = (MODO === 'inicial' ? ['Administrador'] : []).concat(['Requisitos', 'Rede', 'Acesso remoto', 'Painéis de TV', 'Concluir']);
+let etapa = 0;
+const feitas = new Set();
+
+async function api(url, corpo) {
+    const opts = corpo === undefined ? {} : { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(corpo) };
+    try {
+        const r = await fetch(url, opts);
+        const j = await r.json().catch(() => ({ok: false, erro: 'Resposta inválida do servidor'}));
+        if (r.status === 401) j.erro = 'Sessão expirada. Recarregue a página e entre novamente.';
+        return j;
+    } catch (e) { return { ok: false, erro: 'Sem conexão com o servidor: ' + e }; }
+}
+const $ = id => document.getElementById(id);
+function linha(ok, titulo, detalhe) {
+    const cls = ok === true ? 'ok' : ok === false ? 'err' : 'warn';
+    const ico = ok === true ? '✅' : ok === false ? '❌' : '⚠️';
+    return `<div><span class="${cls}">${ico}</span><span><b>${esc(titulo)}</b>${detalhe ? '<br><small>' + esc(detalhe) + '</small>' : ''}</span></div>`;
+}
+function mostrar(id, html) { const el = $(id); el.innerHTML = html; el.style.display = 'block'; }
+function ocupado(btn, on, txt) { btn.disabled = on; if (txt) btn.dataset.t = btn.dataset.t || btn.textContent; btn.textContent = on ? (txt || 'Aguarde...') : (btn.dataset.t || btn.textContent); }
+
+function desenharPassos() {
+    $('steps').innerHTML = ETAPAS.map((n, i) => `<span class="${i === etapa ? 'on' : feitas.has(i) ? 'done' : ''}">${i + 1}. ${esc(n)}</span>`).join('');
+    $('sub').textContent = MODO === 'inicial'
+        ? 'Primeiro acesso: vamos configurar tudo passo a passo. Cada etapa é testada antes de seguir; as opcionais podem ser puladas.'
+        : 'Reconfiguração: refaça ou ajuste qualquer etapa.';
+}
+function ir(n) { etapa = n; desenharPassos(); VIEWS[ETAPAS[etapa]](); window.scrollTo(0, 0); }
+function proxima(pular) { if (!pular) feitas.add(etapa); ir(Math.min(etapa + 1, ETAPAS.length - 1)); }
+function rodape(extra) {
+    return `<div class="btns">${extra || ''}<button class="b-ghost" onclick="proxima(true)">Pular esta etapa</button></div>`;
+}
+
+const VIEWS = {
+    'Administrador'() {
+        $('card').innerHTML = `
+            <h2>Crie o administrador</h2>
+            <p class="d">Este usuário poderá tudo: cadastrar unidades e equipamentos, executar ações remotas e gerenciar outros usuários.</p>
+            <div class="row"><div><label>Usuário</label><input type="text" id="a_user" value="admin" autocomplete="username"></div>
+            <div><label>Nome da organização (opcional)</label><input type="text" id="a_org" placeholder="Ex.: Hospital Central"></div></div>
+            <div class="row"><div><label>Senha</label><input type="password" id="a_pass" autocomplete="new-password"></div>
+            <div><label>Repita a senha</label><input type="password" id="a_pass2" autocomplete="new-password"></div></div>
+            <label class="chk"><input type="checkbox" id="a_login" checked> Exigir login para ver o painel (recomendado; desmarque só em rede totalmente confiável)</label>
+            <div class="btns"><button class="b-pri" id="a_btn">Criar administrador e continuar</button></div>
+            <div class="res" id="a_res"></div>`;
+        $('a_btn').onclick = async () => {
+            if ($('a_pass').value !== $('a_pass2').value) return mostrar('a_res', linha(false, 'As senhas não conferem'));
+            ocupado($('a_btn'), true);
+            const r = await api('/api/setup/admin', { usuario: $('a_user').value, senha: $('a_pass').value, org_name: $('a_org').value, exigir_login_visualizar: $('a_login').checked });
+            ocupado($('a_btn'), false);
+            if (!r.ok) return mostrar('a_res', linha(false, 'Não foi possível criar', r.erro));
+            mostrar('a_res', linha(true, 'Administrador criado', 'Você já está conectado.'));
+            setTimeout(() => proxima(false), 900);
+        };
+    },
+
+    async 'Requisitos'() {
+        $('card').innerHTML = `<h2>Requisitos do sistema</h2><p class="d">O sistema verifica o que precisa para funcionar. Itens opcionais habilitam a gestão remota de máquinas.</p><div id="rq">Verificando...</div>
+            <div class="btns"><button class="b-sec" onclick="VIEWS.Requisitos()">Verificar de novo</button><button class="b-pri" onclick="proxima(false)">Continuar</button></div><div class="res" id="rq_res"></div>`;
+        const r = await api('/api/setup/requisitos');
+        if (!r.ok) { $('rq').innerHTML = linha(false, 'Falha ao verificar', r.erro); return; }
+        $('rq').innerHTML = r.itens.map(i => {
+            let acao = '';
+            if (!i.ok && i.id === 'paexec' || (!i.ok && i.instalar_auto)) acao = `<button class="b-pri" onclick="baixar('${esc(i.id)}', this)">Instalar automaticamente</button> `;
+            if (!i.ok && i.pagina) acao += `<a href="${esc(i.pagina)}" target="_blank" rel="noopener"><button class="b-sec">Instalar manualmente</button></a>`;
+            return `<div class="req"><div>${i.ok ? '✅' : (i.obrigatorio ? '❌' : '⚠️')} <b>${esc(i.nome)}</b>${i.obrigatorio ? '' : '<span class="tag">opcional</span>'}<small>${esc(i.detalhe)}</small></div><div>${acao}</div></div>`;
+        }).join('');
+    },
+
+    'Rede'() {
+        $('card').innerHTML = `
+            <h2>Rede e primeiros equipamentos</h2>
+            <p class="d">Informe o sufixo DNS (se sua rede usa, ex.: <code>empresa.local</code>) e, se quiser, deixe o sistema procurar equipamentos para já preencher o inventário.</p>
+            <div class="row"><div><label>Sufixo DNS (opcional)</label><input type="text" id="r_dns" placeholder="empresa.local"></div>
+            <div><label>Um host para testar (opcional)</label><input type="text" id="r_host" placeholder="NOME-DE-UM-PC"></div></div>
+            <div class="btns"><button class="b-sec" id="r_btn">Salvar e testar nomes</button></div><div class="res" id="r_res"></div>
+            <hr style="margin:22px 0;border:none;border-top:1px solid var(--bd)">
+            <h2 style="font-size:1.05rem">Procurar equipamentos na rede</h2>
+            <div class="row"><div><label>Faixa de IP (máx. /23)</label><input type="text" id="s_range" placeholder="10.0.1.0/24"></div>
+            <div><label>Importar para a unidade</label><input type="text" id="s_unit" placeholder="Ex.: Matriz"></div></div>
+            <div class="btns"><button class="b-sec" id="s_btn">Escanear</button></div><div class="res" id="s_res"></div>
+            <div id="s_lista"></div>
+            ${rodape('<button class="b-pri" onclick="proxima(false)">Continuar</button>')}`;
+        $('r_btn').onclick = async () => {
+            ocupado($('r_btn'), true, 'Testando...');
+            const r = await api('/api/setup/rede', { dns_suffix: $('r_dns').value, host_teste: $('r_host').value });
+            ocupado($('r_btn'), false);
+            mostrar('r_res', linha(r.ok, r.ok ? 'Rede salva' : 'Atenção', r.ok ? r.detalhe : r.erro));
+        };
+        $('s_btn').onclick = async () => {
+            ocupado($('s_btn'), true, 'Escaneando (pode levar 1 minuto)...');
+            const r = await api('/api/scanner/scan', { ip_range: $('s_range').value });
+            ocupado($('s_btn'), false);
+            if (r.error || !Array.isArray(r)) return mostrar('s_res', linha(false, 'Não foi possível escanear', r.error || r.erro));
+            window._achados = r;
+            mostrar('s_res', linha(true, `${r.length} dispositivos encontrados`, 'Marque os que deseja importar.'));
+            $('s_lista').innerHTML = r.length ? `<div class="scroll"><table><tr><th></th><th>IP</th><th>Nome</th><th>Tipo</th></tr>${r.map((x, i) =>
+                `<tr><td><input type="checkbox" class="s_chk" data-i="${i}" ${x.registered ? '' : 'checked'}></td><td>${esc(x.ip)}</td><td>${esc(x.hostname)}</td><td>${esc(x.type)}</td></tr>`).join('')}</table></div>
+                <div class="btns"><button class="b-pri" id="s_imp">Importar selecionados</button></div>` : '';
+            if (r.length) $('s_imp').onclick = async () => {
+                const unit = $('s_unit').value.trim();
+                if (!unit) return mostrar('s_res', linha(false, 'Informe o nome da unidade'));
+                const itens = [...document.querySelectorAll('.s_chk:checked')].map(c => { const x = window._achados[+c.dataset.i]; return { hostname: x.hostname, ip: x.ip, type: x.type, sector: 'Geral' }; });
+                const ri = await api('/api/scanner/importar', { unit, items: itens });
+                mostrar('s_res', linha(ri.ok, ri.ok ? `${ri.inseridos} equipamentos importados` : 'Falha ao importar', ri.ok ? (ri.ignorados ? ri.ignorados + ' já existiam' : '') : ri.msg));
+            };
+        };
+    },
+
+    'Acesso remoto'() {
+        $('card').innerHTML = `
+            <h2>Acesso às máquinas — conta de rede (opcional)</h2>
+            <p class="d">Não existe conta fixa: <b>cada pessoa usa a própria conta de rede</b> quando for usar a gestão remota (reiniciar, mensagens, instalar programas...). A credencial fica só na memória do servidor durante a sessão e <b>nunca é salva</b>. Aqui você pode testar agora se a sua conta é administradora na rede: o sistema faz sozinho um teste interno, somente leitura, em PCs do inventário que estejam ligados (por isso o teste falha se ainda não houver equipamentos cadastrados).</p>
+            <div class="row"><div><label>Usuário (ex.: DOMINIO\\usuario)</label><input type="text" id="t_user" autocomplete="off"></div>
+            <div><label>Senha</label><input type="password" id="t_pass" autocomplete="new-password"></div></div>
+            <div class="btns"><button class="b-pri" id="t_btn">Testar minha conta</button></div><div class="res" id="t_res"></div>
+            ${rodape('<button class="b-sec" onclick="proxima(false)">Continuar</button>')}`;
+        $('t_btn').onclick = async () => {
+            ocupado($('t_btn'), true, 'Testando...');
+            const r = await api('/api/rede/entrar', { usuario: $('t_user').value, senha: $('t_pass').value });
+            ocupado($('t_btn'), false);
+            $('t_pass').value = '';
+            const passos = (r.passos || []).map(p => linha(p.ok, p.nome, p.detalhe)).join('');
+            mostrar('t_res', passos + (r.ok ? linha(true, 'Validada! Você é administrador na rede.', 'A conta vale só nesta sessão e não foi salva.') : linha(false, r.erro || 'Não foi possível validar', 'Corrija e teste de novo, ou pule esta etapa.')));
+        };
+    },
+    'Painéis de TV'() {
+        $('card').innerHTML = `
+            <h2>Painéis de TV — Raspberry Pi (opcional)</h2>
+            <p class="d">Se você usa painéis de TV controlados por SSH, informe o acesso. O teste executa só <code>uptime</code> no painel.</p>
+            <div class="row"><div><label>IP do painel</label><input type="text" id="p_ip" placeholder="10.0.0.50"></div>
+            <div><label>Unidade</label><input type="text" id="p_un"></div><div><label>Setor</label><input type="text" id="p_se"></div></div>
+            <div class="row"><div><label>Usuário SSH</label><input type="text" id="p_user" value="pi" autocomplete="off"></div>
+            <div><label>Senha SSH</label><input type="password" id="p_pass" autocomplete="new-password"></div></div>
+            <div class="btns"><button class="b-pri" id="p_btn">Testar, salvar e cadastrar painel</button></div><div class="res" id="p_res"></div>
+            ${rodape('<button class="b-sec" onclick="proxima(false)">Continuar</button>')}`;
+        $('p_btn').onclick = async () => {
+            ocupado($('p_btn'), true, 'Conectando...');
+            const r = await api('/api/setup/testar_ssh', { ip: $('p_ip').value, usuario: $('p_user').value, senha: $('p_pass').value, salvar: true });
+            if (!r.ok) { ocupado($('p_btn'), false); return mostrar('p_res', linha(false, 'Falhou', r.erro)); }
+            let html = linha(true, 'Painel respondeu', r.detalhe);
+            const c = await api('/api/paineis/adicionar', { ip: $('p_ip').value, unidade: $('p_un').value, setor: $('p_se').value });
+            html += linha(c.ok ? true : null, c.ok ? 'Painel cadastrado' : 'Painel não cadastrado', c.ok ? '' : c.erro);
+            ocupado($('p_btn'), false);
+            mostrar('p_res', html);
+        };
+    },
+
+    'Concluir'() {
+        $('card').innerHTML = `
+            <h2>Tudo pronto 🎉</h2>
+            <p class="d">Você pode refazer qualquer etapa depois em <b>Admin → Configurações</b>. Dica: em <b>Admin → Usuários</b> crie contas para sua equipe (técnico anota, leitor só vê).</p>
+            <div class="btns"><button class="b-pri" id="c_btn">Abrir o painel</button></div>`;
+        $('c_btn').onclick = async () => { await api('/api/setup/concluir', {}); location.href = '/'; };
+    },
+};
+
+function baixar(id, btn) {
+    if (!confirm('O sistema vai baixar este arquivo do site oficial do fabricante (https) e só instalá-lo se a assinatura digital for válida. Continuar?')) return;
+    ocupado(btn, true, 'Baixando e verificando...');
+    api('/api/setup/baixar', { ferramenta: id }).then(r => {
+        mostrar('rq_res', r.ok ? linha(true, 'Instalado', r.detalhe) : linha(false, 'Não instalado', r.erro));
+        if (r.ok) VIEWS.Requisitos(); else ocupado(btn, false);
+    });
+}
+
+desenharPassos();
+VIEWS[ETAPAS[0]]();
+</script>
+</body>
+</html>

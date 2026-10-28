@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Administração - Monitor TI</title>
+    <style>
+        :root { --bg:#f1f5f9; --card:#fff; --txt:#1e293b; --mut:#64748b; --pri:#3b82f6; --ok:#16a34a; --err:#dc2626; --bd:#e2e8f0; }
+        * { box-sizing:border-box; }
+        body { margin:0; font-family:'Segoe UI',system-ui,sans-serif; background:var(--bg); color:var(--txt); padding:16px 12px 40px; }
+        .top { max-width:960px; margin:0 auto 14px; display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; }
+        .top h1 { margin:0; font-size:1.3rem; }
+        a.lnk { color:var(--pri); text-decoration:none; font-weight:600; font-size:.9rem; margin-left:12px; }
+        .tabs { max-width:960px; margin:0 auto; display:flex; gap:6px; flex-wrap:wrap; }
+        .tabs button { padding:9px 14px; border:none; background:#e2e8f0; border-radius:8px 8px 0 0; font-weight:600; cursor:pointer; color:var(--mut); }
+        .tabs button.on { background:var(--card); color:var(--pri); }
+        .panel { max-width:960px; margin:0 auto; background:var(--card); padding:20px; border-radius:0 8px 8px 8px; box-shadow:0 2px 8px rgba(0,0,0,.07); display:none; }
+        .panel.on { display:block; }
+        h2 { margin:0 0 4px; font-size:1.1rem; } p.d { margin:0 0 14px; color:var(--mut); font-size:.9rem; }
+        table { width:100%; border-collapse:collapse; font-size:.9rem; }
+        th, td { text-align:left; padding:8px 6px; border-bottom:1px solid var(--bd); vertical-align:middle; }
+        .scroll { overflow-x:auto; }
+        input[type=text], input[type=password], select, textarea { padding:8px; border:1px solid var(--bd); border-radius:6px; font-family:inherit; font-size:.95rem; width:100%; }
+        label { display:block; font-weight:600; font-size:.82rem; margin:10px 0 3px; }
+        .row { display:flex; gap:10px; flex-wrap:wrap; } .row > div { flex:1; min-width:160px; }
+        button.b { padding:8px 14px; border:none; border-radius:6px; font-weight:600; cursor:pointer; background:var(--pri); color:#fff; }
+        button.s { background:#e2e8f0; color:var(--txt); } button.r { background:var(--err); }
+        button.mini { padding:4px 9px; font-size:.8rem; }
+        .msg { margin-top:10px; font-size:.9rem; min-height:1.2em; } .ok { color:var(--ok); } .er { color:var(--err); }
+        .tag { padding:2px 8px; border-radius:10px; font-size:.75rem; background:#e2e8f0; }
+        .tag.admin { background:#dbeafe; color:#1e40af; } .tag.tecnico { background:#dcfce7; color:#166534; }
+        textarea { min-height:90px; font-family:Consolas,monospace; }
+        @media (max-width:640px) { .panel { padding:14px; } th:nth-child(n+4), td:nth-child(n+4) { white-space:nowrap; } }
+    </style>
+</head>
+<body>
+<div class="top">
+    <h1>Administração</h1>
+    <div><span style="color:var(--mut);font-size:.9rem">{{ usuario }}</span>
+        <a class="lnk" href="/">Painel</a><a class="lnk" href="/setup">Assistente de configuração</a><a class="lnk" href="/logout">Sair</a></div>
+</div>
+
+<div class="tabs" id="tabs"></div>
+
+<div class="panel" id="p-usuarios">
+    <h2>Usuários</h2>
+    <p class="d"><b>Administrador</b>: tudo. <b>Técnico</b>: vê tudo e escreve anotações. <b>Leitor</b>: só visualiza.</p>
+    <div class="scroll"><table><thead><tr><th>Usuário</th><th>Papel</th><th>Situação</th><th>Ações</th></tr></thead><tbody id="u_lista"></tbody></table></div>
+    <h2 style="margin-top:22px">Novo usuário</h2>
+    <div class="row"><div><label>Usuário</label><input type="text" id="n_user" autocomplete="off"></div>
+        <div><label>Senha (mín. 8)</label><input type="password" id="n_pass" autocomplete="new-password"></div>
+        <div><label>Papel</label><select id="n_papel"><option value="leitor">Leitor</option><option value="tecnico">Técnico</option><option value="admin">Administrador</option></select></div></div>
+    <p><button class="b" onclick="criarUsuario()">Criar usuário</button></p><div class="msg" id="u_msg"></div>
+</div>
+
+<div class="panel" id="p-inventario">
+  <div id="i_view">
+    <h2>Unidades</h2>
+    <p class="d">Clique em <b>Editar</b> para gerenciar os andares e equipamentos de uma unidade. Você também pode renomear ou excluir a unidade inteira.</p>
+    <div class="row" style="margin-bottom:10px"><div style="max-width:340px"><input type="text" id="i_novaunidade" placeholder="Nome da nova unidade"></div><div style="flex:0"><button class="b" onclick="criarUnidade()">Criar unidade</button></div></div>
+    <div class="scroll"><table><thead><tr><th>Unidade</th><th>Andares</th><th>Equipamentos</th><th>Ações</th></tr></thead><tbody id="i_lista"></tbody></table></div>
+    <h2 style="margin-top:22px">Importar / exportar CSV</h2>
+    <p class="d">Colunas: <code>unidade;andar;setor;host;tipo</code> (tipo: PC, IMP, TV ou Outro). Itens já existentes são ignorados. O CSV exportado pode ser aberto no Excel.</p>
+    <p><input type="file" id="csv_file" accept=".csv,.txt"> <button class="b" onclick="importarCsv()">Importar</button>
+        <a href="/api/exportar_csv"><button class="b s" type="button">Exportar inventário (CSV)</button></a></p><div class="msg" id="i_msg"></div>
+  </div>
+
+  <div id="i_edit" style="display:none">
+    <p><button class="b s" onclick="voltarUnidades()">&larr; Voltar às unidades</button></p>
+    <h2 id="e_titulo"></h2>
+    <p class="d">Edite os campos e clique em <b>Salvar</b> na linha. Para mover um equipamento, troque o andar. Excluir remove também as anotações dele.</p>
+    <div class="row" style="align-items:flex-end">
+        <div><label>Buscar equipamento</label><input type="text" id="e_busca" placeholder="host ou setor..." oninput="filtrarEdicao()"></div>
+        <div style="flex:0;white-space:nowrap"><button class="b s" onclick="renomearUnidadeAtual()">Renomear unidade</button></div>
+    </div>
+    <div class="row" style="margin-top:8px;align-items:flex-end"><div style="max-width:300px"><label>Novo andar</label><input type="text" id="e_novoandar" placeholder="Ex.: 2º Andar"></div><div style="flex:0"><button class="b" onclick="criarAndar()">Adicionar andar</button></div></div>
+    <div class="msg" id="e_msg"></div>
+    <div id="e_corpo" style="margin-top:12px"></div>
+  </div>
+</div>
+
+<div class="panel" id="p-config">
+    <h2>Configurações</h2>
+    <p class="d">Senhas ficam criptografadas e nunca são exibidas; deixe em branco para manter a atual.</p>
+    <div class="row"><div><label>Nome da organização</label><input type="text" id="c_org_name"></div>
+        <div><label>Sufixo DNS</label><input type="text" id="c_dns_suffix" placeholder="empresa.local"></div>
+        <div><label>Título da mensagem enviada aos usuários</label><input type="text" id="c_popup_title" placeholder="Suporte TI"></div></div>
+    <div class="row"><div><label>Usuário SSH dos painéis</label><input type="text" id="c_painel_ssh_user"></div>
+        <div><label>Senha SSH dos painéis <span class="tag" id="t_painel_ssh_pass"></span></label><input type="password" id="c_painel_ssh_pass" autocomplete="new-password"></div></div>
+    <p class="d" style="margin-top:14px"><b>Acesso remoto às máquinas:</b> não há conta fixa. Cada pessoa informa a própria conta de rede ao usar a gestão remota (fica só na memória do servidor durante a sessão).</p>
+    <label>Compartilhamento de rede com instaladores (Chrome, AnyDesk, drivers)</label><input type="text" id="c_file_server" placeholder="\\servidor\pasta\Instaladores">
+    <label style="display:flex;gap:8px;font-weight:400;margin-top:14px"><input type="checkbox" id="c_exigir_login_visualizar"> Exigir login para visualizar o painel</label>
+    <p><button class="b" onclick="salvarConfig()">Salvar</button></p><div class="msg" id="c_msg"></div>
+</div>
+
+<div class="panel" id="p-aud">
+    <h2>Registro de ações</h2><p class="d">Últimas 200 ações (logins, alterações, comandos nos painéis...).</p>
+    <div class="scroll"><table><thead><tr><th>Data</th><th>Usuário</th><th>Ação</th><th>Detalhe</th></tr></thead><tbody id="a_lista"></tbody></table></div>
+</div>
+
+<div class="panel" id="p-backup">
+    <h2>Backup</h2>
+    <p class="d">Baixa uma cópia consistente do banco (<code>monitor.db</code>) com o sistema em uso. As senhas dentro dele são criptografadas; para restaurá-las em outro computador guarde também, em local seguro, o arquivo <code>data/chave.key</code>.</p>
+    <p><a href="/admin/backup"><button class="b" type="button">Baixar backup agora</button></a></p>
+</div>
+
+<script>
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const ABAS = [['usuarios','Usuários'],['inventario','Inventário'],['config','Configurações'],['aud','Registro'],['backup','Backup']];
+async function api(url, corpo) {
+    const o = corpo === undefined ? {} : {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(corpo)};
+    try { const r = await fetch(url, o); if (r.status === 401) location.href = '/login?next=/admin'; return await r.json(); }
+    catch (e) { return {ok:false, msg:'Falha de conexão', erro:'Falha de conexão'}; }
+}
+function msg(id, ok, texto) { const el = document.getElementById(id); el.className = 'msg ' + (ok ? 'ok' : 'er'); el.textContent = texto; }
+function aba(id) {
+    document.querySelectorAll('.panel').forEach(p => p.classList.toggle('on', p.id === 'p-' + id));
+    document.querySelectorAll('#tabs button').forEach(b => b.classList.toggle('on', b.dataset.id === id));
+    ({usuarios: carregarUsuarios, inventario: carregarUnidades, config: carregarConfig, aud: carregarAuditoria}[id] || (() => {}))();
+    history.replaceState(null, '', '#' + id);
+}
+document.getElementById('tabs').innerHTML = ABAS.map(([i, n]) => `<button data-id="${i}" onclick="aba('${i}')">${n}</button>`).join('');
+
+async function carregarUsuarios() {
+    const r = await api('/api/usuarios'); if (!r.ok) return;
+    document.getElementById('u_lista').innerHTML = r.usuarios.map(u => `<tr>
+        <td><b>${esc(u.usuario)}</b>${u.usuario === r.eu ? ' <span class="tag">você</span>' : ''}</td>
+        <td><select onchange="alterarUsuario(${u.id}, {papel:this.value})"><option value="leitor" ${u.papel==='leitor'?'selected':''}>Leitor</option><option value="tecnico" ${u.papel==='tecnico'?'selected':''}>Técnico</option><option value="admin" ${u.papel==='admin'?'selected':''}>Administrador</option></select></td>
+        <td>${u.ativo ? 'Ativo' : '<span class="er">Desativado</span>'}</td>
+        <td><button class="b s mini" onclick="alterarUsuario(${u.id}, {ativo:${u.ativo ? 'false' : 'true'}})">${u.ativo ? 'Desativar' : 'Ativar'}</button>
+            <button class="b s mini" onclick="novaSenha(${u.id})">Nova senha</button>
+            <button class="b r mini" onclick="excluirUsuario(${u.id}, ${JSON.stringify(u.usuario).replace(/"/g, '&quot;')})">Excluir</button></td></tr>`).join('');
+}
+async function criarUsuario() {
+    const r = await api('/api/usuarios', {usuario: n_user.value, senha: n_pass.value, papel: n_papel.value});
+    msg('u_msg', r.ok, r.ok ? 'Usuário criado.' : r.msg); if (r.ok) { n_user.value = n_pass.value = ''; carregarUsuarios(); }
+}
+async function alterarUsuario(id, dados) { const r = await api(`/api/usuarios/${id}/alterar`, dados); msg('u_msg', r.ok, r.ok ? 'Atualizado.' : r.msg); carregarUsuarios(); }
+async function novaSenha(id) { const s = prompt('Nova senha:'); if (s) alterarUsuario(id, {senha: s}); }
+async function excluirUsuario(id, nome) { if (!confirm('Excluir o usuário ' + nome + '?')) return; const r = await api(`/api/usuarios/${id}/excluir`, {}); msg('u_msg', r.ok, r.ok ? 'Excluído.' : r.msg); carregarUsuarios(); }
+
+async function carregarUnidades() {
+    const r = await api('/api/unidades'); if (!r.ok) return;
+    document.getElementById('i_lista').innerHTML = r.unidades.length ? r.unidades.map(u => `<tr><td><b>${esc(u.nome)}</b></td><td>${u.andares}</td><td>${u.equipamentos}</td>
+        <td><button class="b mini" onclick='abrirUnidade(${JSON.stringify(u.nome).replace(/'/g, "&#39;")})'>Editar</button>
+            <button class="b s mini" onclick='renomearUnidade(${JSON.stringify(u.nome).replace(/'/g, "&#39;")})'>Renomear</button>
+            <button class="b r mini" onclick='excluirUnidade(${JSON.stringify(u.nome).replace(/'/g, "&#39;")}, ${u.equipamentos})'>Excluir</button></td></tr>`).join('')
+        : '<tr><td colspan="4" style="color:var(--mut)">Nenhuma unidade ainda. Crie em "Nova Unidade" no painel ou importe um CSV.</td></tr>';
+}
+async function renomearUnidade(nome) { const n = prompt('Novo nome da unidade:', nome); if (!n || n === nome) return; const r = await api('/api/unidade/renomear', {antigo: nome, novo: n}); msg('i_msg', r.ok, r.ok ? 'Renomeada.' : r.msg); carregarUnidades(); }
+async function excluirUnidade(nome, qtd) {
+    if (!confirm(`Excluir a unidade "${nome}" e seus ${qtd} equipamentos (e anotações)? Isso não pode ser desfeito.`)) return;
+    if (prompt('Para confirmar, digite o nome da unidade:') !== nome) return msg('i_msg', false, 'Nome não confere. Nada foi excluído.');
+    const r = await api('/api/unidade/excluir', {nome}); msg('i_msg', r.ok, r.ok ? 'Excluída.' : r.msg); carregarUnidades();
+}
+// ---------- edição completa de uma unidade ----------
+let UN = null;   // {nome, andares:[{nome, itens:[{id, setor, host, tipo}]}]}
+const TIPOS = [['PC','Computador'],['IMP','Impressora'],['TV','TV / Painel'],['Outro','Outro']];
+const optTipos = sel => TIPOS.map(([v, n]) => `<option value="${v}" ${v === sel ? 'selected' : ''}>${n}</option>`).join('');
+
+async function criarUnidade() {
+    const nome = document.getElementById('i_novaunidade').value.trim();
+    if (!nome) return msg('i_msg', false, 'Informe o nome da unidade.');
+    const r = await api('/api/criar_solicitacao', {nome, floors: [{name: 'Geral', pcs: '', imps: ''}]});
+    msg('i_msg', r.ok, r.ok ? 'Unidade criada. Clique em Editar para cadastrar andares e equipamentos.' : r.msg);
+    if (r.ok) { document.getElementById('i_novaunidade').value = ''; carregarUnidades(); }
+}
+async function abrirUnidade(nome) {
+    const r = await api('/api/unidade/detalhe?nome=' + encodeURIComponent(nome));
+    if (!r.ok) return msg('i_msg', false, r.msg);
+    UN = {nome, andares: r.andares};
+    document.getElementById('i_view').style.display = 'none';
+    document.getElementById('i_edit').style.display = 'block';
+    document.getElementById('e_titulo').textContent = nome;
+    document.getElementById('e_busca').value = '';
+    desenharEdicao();
+}
+async function recarregarEdicao() {
+    const y = window.scrollY;
+    const r = await api('/api/unidade/detalhe?nome=' + encodeURIComponent(UN.nome));
+    if (r.ok) { UN.andares = r.andares; desenharEdicao(); window.scrollTo(0, y); }
+}
+function voltarUnidades() {
+    document.getElementById('i_edit').style.display = 'none';
+    document.getElementById('i_view').style.display = 'block';
+    carregarUnidades();
+}
+function desenharEdicao() {
+    const nomesAndares = UN.andares.map(a => a.nome);
+    document.getElementById('e_corpo').innerHTML = UN.andares.length ? UN.andares.map(a => `
+        <div class="fl-card" data-andar="${esc(a.nome)}" style="border:1px solid var(--bd);border-radius:8px;padding:12px;margin-bottom:14px">
+          <div class="row" style="align-items:flex-end;margin-bottom:8px">
+            <div style="max-width:320px"><label>Andar / local</label><input type="text" class="fl-nome" value="${esc(a.nome)}"></div>
+            <div style="flex:0;white-space:nowrap"><button class="b s mini" data-act="renomear-andar">Renomear</button> <button class="b r mini" data-act="excluir-andar">Excluir andar</button> <span style="color:var(--mut);font-size:.85rem">${a.itens.length} equipamentos</span></div>
+          </div>
+          <div class="scroll"><table><thead><tr><th>Setor</th><th>Host / IP</th><th>Tipo</th><th>Andar</th><th></th></tr></thead><tbody>
+          ${a.itens.map(it => `<tr data-id="${it.id}">
+              <td><input type="text" class="f-setor" value="${esc(it.setor)}"></td>
+              <td><input type="text" class="f-host" value="${esc(it.host)}"></td>
+              <td><select class="f-tipo">${optTipos(it.tipo)}</select></td>
+              <td><select class="f-andar">${nomesAndares.map(n => `<option value="${esc(n)}" ${n === a.nome ? 'selected' : ''}>${esc(n)}</option>`).join('')}</select></td>
+              <td style="white-space:nowrap"><button class="b mini" data-act="salvar">Salvar</button> <button class="b r mini" data-act="excluir">Excluir</button></td></tr>`).join('')}
+          <tr class="add-row" style="background:#f8fafc"><td><input type="text" class="n-setor" placeholder="Setor"></td><td><input type="text" class="n-host" placeholder="Novo host ou IP"></td>
+              <td><select class="n-tipo">${optTipos('PC')}</select></td><td></td><td><button class="b mini" data-act="adicionar">+ Adicionar</button></td></tr>
+          </tbody></table></div>
+        </div>`).join('') : '<p class="d">Esta unidade ainda não tem andares. Crie o primeiro acima.</p>';
+    filtrarEdicao();
+}
+function filtrarEdicao() {
+    const q = document.getElementById('e_busca').value.trim().toLowerCase();
+    document.querySelectorAll('#e_corpo tr[data-id]').forEach(tr => {
+        const t = (tr.querySelector('.f-host').value + ' ' + tr.querySelector('.f-setor').value).toLowerCase();
+        tr.style.display = !q || t.includes(q) ? '' : 'none';
+    });
+}
+document.getElementById('e_corpo').addEventListener('click', async ev => {
+    const btn = ev.target.closest('button[data-act]'); if (!btn) return;
+    const card = btn.closest('.fl-card'), andar = card.dataset.andar, tr = btn.closest('tr');
+    const act = btn.dataset.act;
+    if (act === 'salvar') {
+        const r = await api('/api/equipamento/salvar', {id: +tr.dataset.id, andar: tr.querySelector('.f-andar').value, setor: tr.querySelector('.f-setor').value, host: tr.querySelector('.f-host').value, tipo: tr.querySelector('.f-tipo').value});
+        msg('e_msg', r.ok, r.ok ? 'Equipamento salvo.' : r.msg);
+        if (r.ok && tr.querySelector('.f-andar').value !== andar) recarregarEdicao();
+    } else if (act === 'excluir') {
+        if (!confirm('Excluir ' + tr.querySelector('.f-host').value + '? As anotações dele também serão apagadas.')) return;
+        const r = await api('/api/equipamento/excluir', {id: +tr.dataset.id});
+        msg('e_msg', r.ok, r.ok ? 'Equipamento excluído.' : r.msg); if (r.ok) recarregarEdicao();
+    } else if (act === 'adicionar') {
+        const host = tr.querySelector('.n-host').value.trim();
+        if (!host) return msg('e_msg', false, 'Informe o host ou IP do novo equipamento.');
+        const r = await api('/api/adicionar_item', {unit: UN.nome, floor: andar, sector: tr.querySelector('.n-setor').value, host, type: tr.querySelector('.n-tipo').value});
+        msg('e_msg', r.ok, r.ok ? 'Equipamento adicionado.' : r.msg); if (r.ok) recarregarEdicao();
+    } else if (act === 'renomear-andar') {
+        const novo = card.querySelector('.fl-nome').value.trim();
+        const r = await api('/api/andar/renomear', {unit: UN.nome, antigo: andar, novo});
+        msg('e_msg', r.ok, r.ok ? 'Andar renomeado.' : r.msg); if (r.ok) recarregarEdicao();
+    } else if (act === 'excluir-andar') {
+        const qtd = card.querySelectorAll('tr[data-id]').length;
+        if (!confirm(`Excluir o andar "${andar}" e seus ${qtd} equipamentos (e anotações)? Isso não pode ser desfeito.`)) return;
+        const r = await api('/api/andar/excluir', {unit: UN.nome, nome: andar});
+        msg('e_msg', r.ok, r.ok ? `Andar excluído (${r.removidos} equipamentos).` : r.msg); if (r.ok) recarregarEdicao();
+    }
+});
+async function criarAndar() {
+    const nome = document.getElementById('e_novoandar').value.trim();
+    if (!nome) return msg('e_msg', false, 'Informe o nome do andar.');
+    const r = await api('/api/adicionar_andar_existente', {unit: UN.nome, floor_name: nome, position_ref: 'END'});
+    msg('e_msg', r.ok, r.ok ? 'Andar criado.' : r.msg);
+    if (r.ok) { document.getElementById('e_novoandar').value = ''; recarregarEdicao(); }
+}
+async function renomearUnidadeAtual() {
+    const n = prompt('Novo nome da unidade:', UN.nome); if (!n || n === UN.nome) return;
+    const r = await api('/api/unidade/renomear', {antigo: UN.nome, novo: n});
+    msg('e_msg', r.ok, r.ok ? 'Unidade renomeada.' : r.msg);
+    if (r.ok) { UN.nome = n.trim(); document.getElementById('e_titulo').textContent = UN.nome; }
+}
+async function importarCsv() {
+    const f = document.getElementById('csv_file').files[0]; if (!f) return msg('i_msg', false, 'Escolha um arquivo CSV.');
+    const r = await api('/api/importar_csv', {csv: await f.text()});
+    msg('i_msg', r.ok, r.ok ? `${r.inseridos} importados, ${r.ignorados} ignorados (já existiam ou sem host).` : r.msg); carregarUnidades();
+}
+
+const CAMPOS = ['org_name','dns_suffix','popup_title','painel_ssh_user','file_server'];
+async function carregarConfig() {
+    const r = await api('/api/config'); if (!r.ok) return;
+    CAMPOS.forEach(c => document.getElementById('c_' + c).value = (r.config[c] || {}).valor || '');
+    document.getElementById('c_exigir_login_visualizar').checked = ((r.config.exigir_login_visualizar || {}).valor) === '1';
+    ['painel_ssh_pass'].forEach(c => { document.getElementById('t_' + c).textContent = (r.config[c] || {}).definido ? 'definida' : 'não definida'; document.getElementById('c_' + c).value = ''; });
+}
+async function salvarConfig() {
+    const d = {}; CAMPOS.concat(['painel_ssh_pass']).forEach(c => d[c] = document.getElementById('c_' + c).value);
+    d.exigir_login_visualizar = document.getElementById('c_exigir_login_visualizar').checked ? '1' : '0';
+    const r = await api('/api/config', d); msg('c_msg', r.ok, r.ok ? 'Configurações salvas.' : (r.msg || r.erro)); carregarConfig();
+}
+async function carregarAuditoria() {
+    const r = await api('/api/auditoria'); if (!r.ok) return;
+    document.getElementById('a_lista').innerHTML = r.itens.map(i => `<tr><td style="white-space:nowrap">${esc(i.ts)}</td><td>${esc(i.usuario)}</td><td>${esc(i.acao)}</td><td>${esc(i.detalhe)}</td></tr>`).join('');
+}
+aba((location.hash || '#usuarios').slice(1) in {usuarios:1,inventario:1,config:1,aud:1,backup:1} ? location.hash.slice(1) : 'usuarios');
+</script>
+</body>
+</html>

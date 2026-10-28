@@ -1,0 +1,1916 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monitor TI</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* CSS GERAL */
+        :root { --sidebar-width: 220px; --sidebar-bg: #1e293b; --sidebar-hover: #334155; --sidebar-active: #2563eb; --sidebar-text: #e2e8f0; --bg-body: #f1f5f9; --bg-card: #ffffff; --text-main: #1e293b; --text-muted: #64748b; --border: #e2e8f0; --success: #10b981; --danger: #ef4444; --warning: #f59e0b; --info: #3b82f6; --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1); }
+        [data-theme="dark"] { --sidebar-bg: #0f172a; --bg-body: #0f172a; --bg-card: #1e293b; --text-main: #f1f5f9; --text-muted: #94a3b8; --border: #334155; --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5); }
+        * { box-sizing: border-box; outline: none; }
+        body { margin: 0; font-family: 'Inter', sans-serif; background: var(--bg-body); color: var(--text-main); height: 100vh; display: flex; overflow: hidden; font-size: 14px; }
+        
+        #lobby-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(rgba(15, 23, 42, 0.85), rgba(15, 23, 42, 0.85)), url('/bg_image'); background-size: 100% 100%; background-position: center; background-repeat: no-repeat; z-index: 9999; display: flex; justify-content: center; align-items: center; flex-direction: column; color: white; text-align: center; }
+        .lobby-content { animation: fadeIn 1s ease-in-out; } .hero-icon { font-size: 5rem; color: var(--info); margin-bottom: 20px; animation: float 3s ease-in-out infinite; } .hero-title { font-size: 3rem; font-weight: 800; margin-bottom: 10px; letter-spacing: -1px; } .hero-subtitle { font-size: 1.1rem; color: #94a3b8; margin-bottom: 40px; } .enter-btn { background: var(--info); color: white; border: none; padding: 15px 40px; font-size: 1.2rem; font-weight: 700; border-radius: 50px; cursor: pointer; box-shadow: 0 10px 20px -10px rgba(59, 130, 246, 0.5); transition: all 0.3s; } .enter-btn:hover { transform: translateY(-3px); box-shadow: 0 15px 30px -10px rgba(59, 130, 246, 0.7); background: #2563eb; } .credits { margin-top: 50px; font-size: 0.8rem; color: #475569; }
+        @keyframes float { 0% { transform: translateY(0px); } 50% { transform: translateY(-15px); } 100% { transform: translateY(0px); } } @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        
+        .sidebar { width: var(--sidebar-width); background: var(--sidebar-bg); color: var(--sidebar-text); display: flex; flex-direction: column; border-right: 1px solid rgba(255,255,255,0.05); flex-shrink: 0; transition: all 0.3s; } .brand { padding: 15px; font-size: 1.1rem; font-weight: 700; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid rgba(255,255,255,0.1); color: white; letter-spacing: -0.5px; } .brand i { color: var(--info); font-size: 1.2rem; } .menu { flex: 1; padding: 15px 10px; overflow-y: auto; } .menu-label { font-size: 0.7rem; text-transform: uppercase; color: #64748b; font-weight: 700; margin-bottom: 8px; padding-left: 10px; } .nav-item { display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: 6px; cursor: pointer; color: #cbd5e1; font-size: 0.85rem; font-weight: 500; transition: 0.2s; margin-bottom: 2px; text-decoration: none; border: none; background: none; width: 100%; text-align: left; } .nav-item:hover { background: var(--sidebar-hover); color: white; } .nav-item.active { background: var(--sidebar-active); color: white; } .nav-item i { width: 18px; text-align: center; } .sidebar-footer { padding: 15px; border-top: 1px solid rgba(255,255,255,0.1); font-size: 0.75rem; color: #64748b; text-align: center; } .admin-link { color: #64748b; text-decoration: none; transition: 0.3s; } .admin-link:hover { color: white; }
+        
+        .main-content { flex: 1; display: flex; flex-direction: column; overflow: hidden; position: relative; } header { background: var(--bg-card); padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); box-shadow: var(--shadow); z-index: 10; height: 55px; } .header-title { font-size: 1rem; font-weight: 600; color: var(--text-main); display: flex; align-items: center; gap: 10px; } .header-controls { display: flex; align-items: center; gap: 15px; } .search-box { position: relative; display: flex; align-items: center; } .search-box input { background: var(--bg-body); border: 1px solid var(--border); padding: 6px 10px 6px 30px; border-radius: 4px; color: var(--text-main); font-size: 0.85rem; width: 250px; } .search-box i { position: absolute; left: 10px; color: var(--text-muted); font-size: 0.8rem; } .btn-icon { background: transparent; border: 1px solid var(--border); color: var(--text-main); width: 32px; height: 32px; border-radius: 4px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+        .scroll-area { flex: 1; overflow-y: auto; padding: 20px; }
+        #dashboard-geral { background: linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url('/bg_image'); background-size: 100% 100%; background-position: center; background-repeat: no-repeat; padding: 30px; border-radius: 8px; min-height: calc(100vh - 100px); display: flex; flex-direction: column; } .dashboard-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 25px; margin-top: 20px; } .dash-card { background: rgba(255, 255, 255, 0.95); border-radius: 8px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.3); border: none; display: flex; align-items: center; height: 150px; transition: transform 0.2s; position: relative; } [data-theme="dark"] .dash-card { background: rgba(30, 41, 59, 0.95); } .dash-card:hover { transform: translateY(-5px); } .dash-bar { width: 10px; height: 100%; position: absolute; left: 0; top: 0; } .dash-content { flex: 1; padding: 20px 20px 20px 30px; display: flex; flex-direction: column; justify-content: center; } .dash-value { font-size: 3.5rem; font-weight: 800; line-height: 1; margin-bottom: 5px; } .dash-label { font-size: 1rem; color: #64748b; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; } .dash-icon { font-size: 4rem; opacity: 0.15; margin-right: 30px; }
+        .card-blue .dash-bar { background-color: #3182ce; } .card-blue .dash-value { color: #3182ce; } .card-green .dash-bar { background-color: #38a169; } .card-green .dash-value { color: #38a169; } .card-red .dash-bar { background-color: #e53e3e; } .card-red .dash-value { color: #e53e3e; } .card-teal .dash-bar { background-color: #319795; } .card-teal .dash-value { color: #319795; } .card-orange .dash-bar { background-color: #dd6b20; } .card-orange .dash-value { color: #dd6b20; }
+        .hidden { display: none !important; } .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin-bottom: 20px; } .stat-card { background: var(--bg-card); padding: 15px; border-radius: 8px; border: 1px solid var(--border); box-shadow: var(--shadow); display: flex; flex-direction: column; } .stat-title { font-size: 0.7rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; margin-bottom: 5px; } .stat-value { font-size: 1.4rem; font-weight: 700; color: var(--text-main); } .stat-icon { align-self: flex-end; margin-top: -25px; font-size: 1.2rem; opacity: 0.2; } .border-left-blue { border-left: 3px solid var(--info); } .border-left-green { border-left: 3px solid var(--success); } .border-left-red { border-left: 3px solid var(--danger); }
+        .card { background: var(--bg-card); border-radius: 8px; border: 1px solid var(--border); box-shadow: var(--shadow); overflow: hidden; margin-bottom: 20px; } .card-header { padding: 10px 15px; border-bottom: 1px solid var(--border); background: rgba(0,0,0,0.01); display: flex; justify-content: space-between; align-items: center; } .card-title { font-weight: 700; font-size: 0.9rem; color: var(--text-main); } table { width: 100%; border-collapse: collapse; } th { text-align: left; padding: 8px 12px; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; color: var(--text-muted); border-bottom: 1px solid var(--border); background: var(--bg-body); } td { padding: 6px 12px; border-bottom: 1px solid var(--border); font-size: 0.8rem; vertical-align: middle; } tr:last-child td { border-bottom: none; } tr:hover { background: rgba(0,0,0,0.01); }
+        .badge { padding: 2px 8px; border-radius: 4px; font-size: 0.7rem; font-weight: 700; display: inline-flex; align-items: center; gap: 4px; } .bg-pc { background: rgba(59, 130, 246, 0.1); color: var(--info); } .bg-imp { background: rgba(245, 158, 11, 0.1); color: var(--warning); } .status-pill { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; font-size: 0.75rem; } .dot { width: 8px; height: 8px; border-radius: 50%; display: block; } .st-online { color: var(--success); } .st-online .dot { background: var(--success); } .st-offline { color: var(--danger); } .st-offline .dot { background: var(--danger); } .st-loading { color: var(--text-muted); } .st-loading .dot { background: #cbd5e1; animation: pulse 1.5s infinite; } @keyframes pulse { 0% { opacity: 0.4; } 50% { opacity: 1; } 100% { opacity: 0.4; } }
+        .actions { display: flex; gap: 5px; } .btn-mini { border: 1px solid var(--border); background: transparent; color: var(--text-muted); width: 24px; height: 24px; border-radius: 4px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.2s; font-size: 0.8rem; } .btn-mini:hover { border-color: var(--text-muted); color: var(--text-main); } .btn-mini.danger:hover { border-color: var(--danger); color: var(--danger); background: rgba(239, 68, 68, 0.05); } .btn-mini.edit:hover { border-color: var(--info); color: var(--info); background: rgba(59, 130, 246, 0.05); } .btn-mini.info:hover { border-color: var(--green); color: var(--green); background: rgba(16, 185, 129, 0.05); } .btn-mini.success:hover { border-color: var(--success); color: var(--success); background: rgba(16, 185, 129, 0.08); }
+        .btn-success { background: #10b981; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 0.85rem; display: flex; align-items: center; gap: 5px; } .btn-success:hover { background: #059669; } .btn-purple { background: #8b5cf6; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 0.85rem; display: flex; align-items: center; gap: 5px; margin-right: 10px; } .btn-purple:hover { background: #7c3aed; }
+        .disk-wrap { width: 130px; } .disk-info { display: flex; justify-content: space-between; font-size: 0.65rem; margin-bottom: 2px; color: var(--text-muted); } .progress-track { background: var(--border); height: 4px; border-radius: 2px; overflow: hidden; } .progress-fill { height: 100%; background: var(--success); border-radius: 2px; transition: width 1s ease; }
+        .mono { font-family: 'Consolas', monospace; font-size: 0.75rem; } .clickable-host { cursor: pointer; color: var(--info); font-weight: 600; text-decoration: underline; text-decoration-color: rgba(59,130,246,0.3); } .clickable-host:hover { color: #2563eb; }
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); backdrop-filter: blur(2px); } .modal-content { background: var(--bg-card); margin: 2% auto; padding: 0; width: 800px; border-radius: 8px; border: 1px solid var(--border); display: flex; flex-direction: column; max-height: 95vh; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); } .modal-header { padding: 15px 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; font-weight: 700; font-size: 1.1rem; } .modal-body { padding: 20px; overflow-y: auto; flex: 1; background: var(--bg-body); } .modal-footer { padding: 15px 20px; border-top: 1px solid var(--border); text-align: right; background: var(--bg-card); }
+        .builder-floor { background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; margin-bottom: 15px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); } .floor-header { background: #f8fafc; padding: 10px 15px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; } [data-theme="dark"] .floor-header { background: #1e293b; } .floor-input { border: 1px solid var(--border); padding: 5px 10px; border-radius: 4px; font-weight: 600; width: 300px; background: var(--bg-card); color: var(--text-main); }
+        .builder-cols { display: flex; } .builder-col { flex: 1; padding: 15px; border-right: 1px solid var(--border); } .builder-col:last-child { border-right: none; } .col-title { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: var(--text-muted); margin-bottom: 8px; display: block; } .col-textarea { width: 100%; height: 120px; border: 1px solid var(--border); border-radius: 4px; padding: 8px; font-family: monospace; font-size: 0.85rem; background: var(--bg-body); color: var(--text-main); resize: vertical; }
+        .btn-add-floor { width: 100%; padding: 12px; border: 2px dashed var(--border); background: transparent; color: var(--text-muted); cursor: pointer; font-weight: 600; border-radius: 8px; transition: 0.2s; } .btn-add-floor:hover { border-color: var(--info); color: var(--info); background: rgba(59, 130, 246, 0.05); } .btn-primary { background: var(--info); color: white; padding: 10px 20px; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; } .btn-del-floor { color: var(--danger); cursor: pointer; font-size: 1.2rem; border: none; background: none; }
+        .form-group { margin-bottom: 15px; } .form-group label { display: block; margin-bottom: 5px; font-weight: 600; font-size: 0.85rem; } .form-group input, .form-group select { width: 100%; padding: 10px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg-card); color: var(--text-main); }
+        
+        .monitor-link { cursor: pointer; transition: 0.2s; border-radius: 4px; padding: 2px 4px; }
+        .monitor-link:hover { background: rgba(59, 130, 246, 0.1); color: var(--info); }
+        .gestao-link { cursor: pointer; transition: 0.2s; border-radius: 4px; padding: 2px 6px; color: var(--success); font-weight: 700; white-space: nowrap; }
+        .gestao-link:hover { background: rgba(16, 185, 129, 0.12); }
+        .peripheral-output { font-family: 'Consolas', monospace; font-size: 0.8rem; background: #0f172a; color: #38a169; padding: 15px; border-radius: 6px; white-space: pre-wrap; width: 100%; height: 400px; overflow: auto; }
+
+        .tool-tabs { display: flex; gap: 5px; padding: 10px 15px; border-bottom: 1px solid var(--border); background: var(--bg-card); } .tool-tab { border: 1px solid var(--border); background: transparent; color: var(--text-muted); padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 0.85rem; display: flex; align-items: center; gap: 6px; } .tool-tab:hover { color: var(--text-main); } .tool-tab.active { background: var(--info); color: white; border-color: var(--info); }
+        .tool-host-label { color: #38bdf8; } .tool-category-label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1px; color: #334155; font-weight: 800; margin: 14px 0 6px; } [data-theme="dark"] .tool-category-label { color: #cbd5e1; } .tool-grid { display: flex; flex-wrap: wrap; gap: 6px; } .tool-btn { background: var(--bg-card); border: 1px solid var(--border); color: var(--text-main); padding: 8px 12px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 0.78rem; display: inline-flex; align-items: center; gap: 6px; transition: 0.2s; } .tool-btn:hover { border-color: var(--info); color: var(--info); } .tool-btn:disabled { opacity: 0.5; cursor: not-allowed; } .tool-btn:disabled i { animation: pulse 1s infinite; }
+        .tool-result { margin-top: 14px; background: #0f172a; color: #38a169; font-family: 'Consolas', monospace; font-size: 0.8rem; padding: 12px; border-radius: 6px; min-height: 60px; white-space: pre-wrap; max-height: 300px; overflow: auto; } .tool-result.error { color: #f87171; } .tool-result.loading { color: #f59e0b; }
+
+        /* === TELA FERRAMENTAS DE GESTÃO (Computador Isolado) === */
+        .card-body { padding: 14px 15px; }
+        .tool-target-bar { display: flex; align-items: flex-end; gap: 0; flex-wrap: wrap; padding: 14px 15px; }
+        .tool-target-field { display: flex; flex-direction: column; gap: 5px; margin: 0; }
+        .tool-target-field label { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); display: flex; align-items: center; gap: 5px; }
+        .tool-target-field select, .tool-target-field input { padding: 9px 12px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg-card); color: var(--text-main); font-size: 0.82rem; outline: none; transition: border-color 0.2s; }
+        .tool-target-field select { min-width: 240px; max-width: 280px; cursor: pointer; }
+        .tool-target-field input { min-width: 220px; }
+        .tool-target-field select:focus, .tool-target-field input:focus { border-color: var(--info); box-shadow: 0 0 0 2px rgba(59,130,246,0.15); }
+        .tool-sep { width: 1px; align-self: stretch; background: var(--border); margin: 0 14px; min-height: 38px; }
+        .tool-target-status { display: flex; align-items: center; gap: 8px; padding-bottom: 9px; margin-left: 14px; font-size: 0.8rem; font-weight: 600; color: var(--text-muted); }
+        .tool-status-dot { font-size: 0.9rem; }
+        .tool-target-status.online .tool-status-dot { color: var(--success); }
+        .tool-target-status.online { color: var(--success); }
+        .tool-target-status.offline .tool-status-dot { color: var(--danger); }
+        .tool-target-status.offline { color: var(--danger); }
+        .tool-sections { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px; margin-bottom: 16px; }
+        .tool-sec { margin-bottom: 0; }
+        .tool-sec .card-header { border-left: 3px solid transparent; }
+        .tool-sec-body { display: flex; flex-wrap: wrap; gap: 8px; }
+        .tool-sec.cat-diag .card-header { border-left-color: var(--info); }
+        .tool-sec.cat-imp .card-header { border-left-color: #f59e0b; }
+        .tool-sec.cat-inst .card-header { border-left-color: #8b5cf6; }
+        .tool-sec.cat-perf .card-header { border-left-color: #ef4444; }
+        .tool-btn.cat-diag { border-color: rgba(59,130,246,0.35); } .tool-btn.cat-diag:hover { border-color: var(--info); color: var(--info); background: rgba(59,130,246,0.08); }
+        .tool-btn.cat-imp { border-color: rgba(245,158,11,0.4); } .tool-btn.cat-imp:hover { border-color: #f59e0b; color: #f59e0b; background: rgba(245,158,11,0.1); }
+        .tool-btn.cat-inst { border-color: rgba(139,92,246,0.35); } .tool-btn.cat-inst:hover { border-color: #8b5cf6; color: #8b5cf6; background: rgba(139,92,246,0.1); }
+        .tool-btn.cat-perf { border-color: rgba(239,68,68,0.35); } .tool-btn.cat-perf:hover { border-color: #ef4444; color: #ef4444; background: rgba(239,68,68,0.08); }
+        /* Terminal de saída */
+        .terminal { background: #0b1120; border-radius: 8px; overflow: hidden; }
+        .terminal-bar { display: flex; align-items: center; gap: 6px; padding: 8px 12px; background: #111827; border-bottom: 1px solid rgba(255,255,255,0.06); }
+        .terminal-dot { width: 11px; height: 11px; border-radius: 50%; display: inline-block; }
+        .terminal-dot.red { background: #ef4444; } .terminal-dot.yellow { background: #f59e0b; } .terminal-dot.green { background: #10b981; }
+        .terminal-title { margin-left: 8px; color: #94a3b8; font-family: 'Consolas', monospace; font-size: 0.75rem; }
+        .terminal-title i { color: #38bdf8; }
+        .terminal .tool-result { margin-top: 0; border-radius: 0; background: #0b1120; min-height: 180px; max-height: 400px; padding: 14px; font-size: 0.82rem; line-height: 1.5; }
+        .terminal .tool-result::before { content: "> "; color: #38bdf8; }
+        @media (max-width: 640px) {
+            .tool-target-bar { flex-direction: column; align-items: stretch; }
+            .tool-sep { display: none; }
+            .tool-target-status { margin-left: 0; padding-bottom: 0; }
+            .tool-target-field select, .tool-target-field input { min-width: 100%; max-width: 100%; }
+            .tool-sections { grid-template-columns: 1fr; }
+        }
+
+        .btn-get-id { background: transparent; border: 1px solid var(--border); border-radius: 4px; padding: 4px 8px; font-size: 0.7rem; color: var(--text-muted); cursor: pointer; }
+        .btn-get-id:hover { border-color: var(--info); color: var(--info); }
+        .remote-link { display: block; font-size: 0.75rem; text-decoration: none; color: white; padding: 2px 6px; border-radius: 4px; margin-bottom: 2px; text-align: center; }
+        .link-anydesk { background-color: #ef4444; }
+        .link-teamviewer { background-color: #3b82f6; }
+        .link-rustdesk { background-color: #f97316; }
+
+        /* Estilo para a Tabela do Scanner */
+        .badge-registered { background-color: rgba(16, 185, 129, 0.2); color: #10b981; border: 1px solid #10b981; }
+        .scanner-row td { vertical-align: middle; }
+
+        /* Anotações e histórico */
+        .btn-mini.note { position: relative; }
+        .note-count { position: absolute; top: -6px; right: -6px; background: var(--info); color: #fff; border-radius: 8px; font-size: 0.6rem; min-width: 14px; height: 14px; display: flex; align-items: center; justify-content: center; padding: 0 3px; }
+        .nota { border: 1px solid var(--border); border-radius: 6px; padding: 8px 10px; margin-bottom: 8px; background: var(--bg-card); }
+        .nota small { color: var(--text-muted); } .nota .txt { white-space: pre-wrap; word-break: break-word; margin-top: 3px; }
+        .hist-ev { font-size: 0.8rem; display: flex; gap: 8px; padding: 2px 0; }
+
+        /* Celular / tablet: menu retrátil, cartões empilhados, tabelas com rolagem lateral */
+        .menu-toggle { display: none; } .sidebar-backdrop { display: none; }
+        @media (max-width: 900px) {
+            .sidebar { position: fixed; top: 0; left: 0; bottom: 0; width: 270px; z-index: 10001; transform: translateX(-100%); transition: transform 0.25s ease; }
+            body.menu-open .sidebar { transform: none; }
+            body.menu-open .sidebar-backdrop { display: block; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.55); z-index: 10000; }
+            .menu-toggle { display: inline-flex; margin-right: 8px; }
+            header { padding: 8px 10px; }
+            .header-title { font-size: 0.9rem; min-width: 0; }
+            .header-title #page-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 38vw; }
+            .header-controls { gap: 8px; }
+            .search-box input { width: 110px; }
+            .scroll-area { padding: 10px; }
+            #dashboard-geral { padding: 14px; min-height: auto; }
+            .dashboard-grid { grid-template-columns: 1fr 1fr; gap: 12px; }
+            .dash-card { height: 110px; }
+            .stats-grid { grid-template-columns: repeat(3, 1fr); }
+            .card { overflow-x: auto; }
+            .card table { min-width: 760px; }
+            .modal-content { width: 96% !important; margin: 3% auto !important; max-height: 94vh; }
+        }
+        @media (max-width: 480px) { .dashboard-grid { grid-template-columns: 1fr; } .hero-title { font-size: 2.2rem; } .stats-grid { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+    <div id="lobby-screen">
+        <div class="lobby-content">
+            <i class="fa-solid fa-earth-americas hero-icon"></i>
+            <div class="hero-title">MONITOR TI</div>
+            <div class="hero-subtitle">Gestão Inteligente de Ativos de Rede</div>
+            <button type="button" class="enter-btn" onclick="enterSystem(event)">ENTRAR NO SISTEMA</button>
+            {% if org_name %}<div class="credits" style="margin-bottom:4px">{{ org_name }}</div>{% endif %}
+            <div class="credits">Criado por Ismael Silva, Fabio Lira e Matthews Henrique</div>
+        </div>
+    </div>
+    <nav class="sidebar" style="display:none">
+        <div class="brand"><i class="fa-solid fa-earth-americas"></i> Monitor TI</div>
+        <div class="menu">
+            <button onclick="showDashboard()" class="nav-item" style="color:var(--info); font-weight:600; margin-bottom:15px"><i class="fa-solid fa-home"></i> Início</button>
+            {% if papel == 'admin' %}
+            <button onclick="openScannerModal()" class="nav-item" style="color:#f59e0b; font-weight:600; margin-bottom:15px"><i class="fa-solid fa-radar"></i> Scanner de Rede</button>
+            <button onclick="openVncModal()" class="nav-item" style="color:#a78bfa; font-weight:600; margin-bottom:15px"><i class="fa-solid fa-display"></i> VNC Monitor</button>
+            {% endif %}
+            <button onclick="showPaineis()" class="nav-item" id="btn-paineis-tv" style="color:#f97316; font-weight:600; margin-bottom:15px"><i class="fa-solid fa-tv"></i> Painéis TV</button>
+            {% if papel == 'admin' %}
+            <button onclick="showToolsGeral()" class="nav-item" id="btn-tools-geral" style="color:#10b981; font-weight:600; margin-bottom:15px"><i class="fa-solid fa-screwdriver-wrench"></i> Ferramentas de Gestão</button>
+            {% endif %}
+            <div class="menu-label">Unidades</div>
+            <div id="unit-menu-container">
+                {% for u in all_data.keys() %}
+                <button onclick='switchTab({{ u|tojson }})' class="nav-item" id="btn-{{ u }}"><i class="fa-solid fa-building"></i> {{ u }}</button>
+                {% endfor %}
+            </div>
+            {% if papel == 'admin' %}
+            <div class="menu-label" style="margin-top:20px;">Gestão</div>
+            <button onclick="openBuilder()" class="nav-item" style="color:var(--success); font-weight:600"><i class="fa-solid fa-plus-circle"></i> Nova Unidade</button>
+            {% endif %}
+            {% if not all_data %}
+            <div style="padding:10px; font-size:0.8rem; color:#94a3b8">Nenhuma unidade ainda.{% if papel == 'admin' %} Clique em “Nova Unidade” ou importe um CSV em Admin.{% endif %}</div>
+            {% endif %}
+        </div>
+        <div class="sidebar-footer">
+            {% if usuario %}
+            <div class="rodape-user">
+                <div class="rodape-avatar">{{ usuario[:1]|upper }}</div>
+                <div class="rodape-user-info"><b>{{ usuario }}</b><small>{{ {'admin':'Administrador','tecnico':'Técnico','leitor':'Leitor'}.get(papel, papel) }}</small></div>
+                <a href="/logout" class="rodape-icone" title="Sair"><i class="fa-solid fa-right-from-bracket"></i></a>
+            </div>
+            {% else %}<a href="/login" class="rodape-btn"><i class="fa-solid fa-right-to-bracket"></i> Entrar</a>{% endif %}
+            <div class="rodape-acoes">
+                {% if papel == 'admin' %}<a href="/admin" class="rodape-btn"><i class="fa-solid fa-gear"></i> Administração</a>{% endif %}
+                <a href="#" class="rodape-btn" onclick="abrirSobre();return false"><i class="fa-solid fa-circle-info"></i> Sobre</a>
+            </div>
+            {% if papel == 'admin' %}<div id="rede-status" class="rodape-rede"></div>{% endif %}
+            <div class="rodape-credito">&copy; 2026 Monitor TI{% if org_name %} &middot; {{ org_name }}{% endif %}</div>
+        </div>
+    </nav>
+    <div class="sidebar-backdrop" onclick="document.body.classList.remove('menu-open')"></div>
+    <main class="main-content" style="display:none">
+        <header>
+            <button class="menu-toggle btn-icon" onclick="document.body.classList.toggle('menu-open')" aria-label="Menu"><i class="fa-solid fa-bars"></i></button>
+            <div class="header-title"><i class="fa-solid fa-layer-group" style="color:var(--info)"></i> <span id="page-title">Dashboard Geral</span></div>
+            <div class="header-controls">
+                <div class="search-box"><i class="fa-solid fa-search"></i><input type="text" id="tableSearch" placeholder="Buscar..." onkeyup="filterTable()"></div>
+                <button class="btn-icon" onclick="toggleTheme()"><i class="fa-solid fa-moon" id="theme-icon"></i></button>
+            </div>
+        </header>
+        <div class="scroll-area">
+            <div id="dashboard-geral" class="unit-container">
+                <div class="dashboard-grid">
+                    <div class="dash-card card-blue"><div class="dash-bar"></div><div class="dash-content"><div class="dash-value" id="dash-total-pc">{{ t_pc }}</div><div class="dash-label">Total Computadores</div></div><i class="fa-solid fa-desktop dash-icon"></i></div>
+                    <div class="dash-card card-green"><div class="dash-bar"></div><div class="dash-content"><div class="dash-value" id="dash-online-pc">0</div><div class="dash-label">PCs Online</div></div><i class="fa-solid fa-check-circle dash-icon"></i></div>
+                    <div class="dash-card card-red"><div class="dash-bar"></div><div class="dash-content"><div class="dash-value" id="dash-offline-pc">{{ t_pc }}</div><div class="dash-label">PCs Offline</div></div><i class="fa-solid fa-triangle-exclamation dash-icon"></i></div>
+                    <div class="dash-card card-teal"><div class="dash-bar"></div><div class="dash-content"><div class="dash-value" id="dash-total-imp">{{ t_imp }}</div><div class="dash-label">Total Impressoras</div></div><i class="fa-solid fa-print dash-icon"></i></div>
+                    <div class="dash-card card-green"><div class="dash-bar"></div><div class="dash-content"><div class="dash-value" id="dash-online-imp">0</div><div class="dash-label">Impr. Online</div></div><i class="fa-solid fa-wifi dash-icon"></i></div>
+                    <div class="dash-card card-orange"><div class="dash-bar"></div><div class="dash-content"><div class="dash-value" id="dash-total-painel">0</div><div class="dash-label">Total Paineis</div></div><i class="fa-solid fa-tv dash-icon"></i></div>
+                    <div class="dash-card card-green"><div class="dash-bar"></div><div class="dash-content"><div class="dash-value" id="dash-online-painel">0</div><div class="dash-label">Paineis Online</div></div><i class="fa-solid fa-check-circle dash-icon"></i></div>
+                    <div class="dash-card card-red"><div class="dash-bar"></div><div class="dash-content"><div class="dash-value" id="dash-offline-painel">0</div><div class="dash-label">Paineis Offline</div></div><i class="fa-solid fa-triangle-exclamation dash-icon"></i></div>
+                </div>
+            </div>
+            {% for unidade_nome, locais in all_data.items() %}
+            <div id="unit-{{ unidade_nome }}" class="unit-container hidden">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px">
+                    <div class="stats-grid" style="margin-bottom:0; flex:1">
+                        <div class="stat-card border-left-blue" style="padding:10px"><div class="stat-title">Total Hosts</div><div class="stat-value" id="count-total-{{ unidade_nome }}">0</div></div>
+                        <div class="stat-card border-left-green" style="padding:10px"><div class="stat-title">Online</div><div class="stat-value" id="count-online-{{ unidade_nome }}" style="color:var(--success)">0</div></div>
+                        <div class="stat-card border-left-red" style="padding:10px"><div class="stat-title">Offline</div><div class="stat-value" id="count-offline-{{ unidade_nome }}" style="color:var(--danger)">0</div></div>
+                    </div>
+                    {% if papel == 'admin' %}
+                    <button class="btn-purple" onclick='openAddFloorModal({{ unidade_nome|tojson }})'><i class="fa-solid fa-layer-group"></i> Novo Andar</button>
+                    <button class="btn-success" onclick='openAddModal({{ unidade_nome|tojson }})'><i class="fa-solid fa-plus"></i> Adicionar</button>
+                    {% endif %}
+                </div>
+                {% for local, itens in locais.items() %}
+                <div class="card">
+                    <div class="card-header"><div class="card-title">{{ local }}</div><div style="font-size:0.75rem; color:var(--text-muted);">{{ itens|length }} dispositivos</div></div>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th width="80">Tipo</th>
+                                <th>Setor</th>
+                                <th width="120">Acesso Remoto</th> <th>Hostname</th>
+                                <th>IP</th>
+                                <th width="100">Status</th>
+                                <th width="100">Uptime</th>
+                                <th>Usuário</th>
+                                <th>Info HW</th>
+                                <th width="120">Disco (C:)</th>
+                                <th width="70" style="text-align:center">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody class="table-body">
+                            {% for d in itens %}
+                            <tr class="searchable-row">
+                                <td><span class="badge {{ 'bg-pc' if d.tipo == 'PC' else 'bg-imp' }}"><i class="fa-solid {{ 'fa-desktop' if d.tipo == 'PC' else 'fa-print' }}"></i> {{ d.tipo }}</span></td>
+                                <td><strong>{{ d.setor }}</strong></td>
+                                <td>
+                                    {% if d.tipo == 'PC' %}
+                                    <div id="remote-container-{{ d.id_uniq }}">
+                                        <button class="btn-get-id" onclick='getRemoteInfo({{ d.host|tojson }}, {{ d.id_uniq|tojson }})'>
+                                            <i class="fa-solid fa-magnifying-glass"></i> Ver ID
+                                        </button>
+                                    </div>
+                                    {% else %}
+                                    <span style="opacity:0.3">-</span>
+                                    {% endif %}
+                                </td>
+                                <td class="mono font-weight-bold">{{ d.host }}</td>
+                                <td id="ip-{{ d.id_uniq }}" class="mono" style="color:var(--text-muted)">...</td>
+                                <td><div id="st-{{ d.id_uniq }}" class="status-pill st-loading" data-host="{{ d.host }}" data-type="{{ d.tipo }}"><span class="dot"></span> <span class="st-text">Verif...</span></div></td>
+                                <td style="font-size:0.75rem"><span id="uptime-{{ d.id_uniq }}">-</span></td>
+                                <td style="font-size:0.75rem; color:var(--info); font-weight:600"><span id="user-{{ d.id_uniq }}">-</span></td>
+                                <td>
+                                    <div style="font-size:0.7rem; line-height:1.2">
+                                        <div id="model-{{ d.id_uniq }}" style="font-weight:bold">-</div>
+                                        <div id="cpu-{{ d.id_uniq }}" style="font-size:0.65rem; color:#64748b">-</div>
+                                        <div id="serial-{{ d.id_uniq }}" class="mono" style="color:var(--text-muted); font-size:0.65rem">-</div>
+                                        <div id="os-{{ d.id_uniq }}" style="color:var(--info); margin-top:2px;"></div>
+                                        <div id="ram-{{ d.id_uniq }}" style="color:var(--text-muted)"></div>
+                                        <div id="monitor-{{ d.id_uniq }}" style="font-size:0.65rem; font-weight:700; color:#475569; margin-top:3px; border-top:1px solid #f1f5f9; padding-top:2px; display:none"></div>
+                                    </div>
+                                </td>
+                                <td>
+                                    {% if d.tipo == 'PC' %}
+                                    <div class="disk-wrap" id="disk-res-{{ d.id_uniq }}" style="display:none">
+                                        <div class="disk-info"><span id="disk-txt-{{ d.id_uniq }}"></span></div>
+                                        <div class="progress-track"><div class="progress-fill" id="disk-bar-{{ d.id_uniq }}" style="width:0%"></div></div>
+                                    </div>
+                                    <span id="disk-stat-{{ d.id_uniq }}" style="font-size:0.7rem; color:var(--text-muted)">...</span>
+                                    {% else %} <span style="font-size:0.7rem; opacity:0.3">N/A</span> {% endif %}
+                                </td>
+                                <td>
+                                    <div class="actions" style="justify-content:center">
+                                        <button class="btn-mini note" onclick='openNotas({{ d.id_uniq }}, {{ d.host|tojson }})' title="Anotações e histórico"><i class="fa-solid fa-note-sticky"></i>{% if d.notas %}<span class="note-count">{{ d.notas }}</span>{% endif %}</button>
+                                        {% if papel == 'admin' %}
+                                        {% set floor_list_str = locais.keys()|list|tojson|safe %}
+                                        <button class="btn-mini edit" onclick='editItem({{ unidade_nome|tojson }}, {{ local|tojson }}, {{ d.setor|tojson }}, {{ d.host|tojson }}, {{ floor_list_str }})' title="Editar"><i class="fa-solid fa-pen"></i></button>
+                                        <button class="btn-mini danger" onclick='deleteItem({{ unidade_nome|tojson }}, {{ local|tojson }}, {{ d.setor|tojson }}, {{ d.host|tojson }})' title="Excluir"><i class="fa-solid fa-trash"></i></button>
+                                        {% if d.tipo == 'PC' %}
+                                        <button class="btn-mini success" onclick='openPeripheralModal({{ d.host|tojson }})' title="Ferramenta de Gestão"><i class="fa-solid fa-screwdriver-wrench"></i></button>
+                                        <button class="btn-mini" onclick='powerAction({{ d.host|tojson }}, "restart")' title="Reiniciar"><i class="fa-solid fa-rotate-right"></i></button>
+                                        <button class="btn-mini danger" onclick='powerAction({{ d.host|tojson }}, "shutdown")' title="Desligar"><i class="fa-solid fa-power-off"></i></button>
+                                        <button class="btn-mini info" onclick='sendMessage({{ d.host|tojson }})' title="Enviar Mensagem"><i class="fa-solid fa-comment"></i></button>
+                                        {% endif %}
+                                        {% endif %}
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% endfor %}
+            </div>
+            {% endfor %}
+            <!-- ================================================================== -->
+            <!-- ABA PAINÉIS TV -->
+            <!-- ================================================================== -->
+            <div id="paineis-container" class="unit-container hidden">
+                <!-- STATS + BOTOES -->
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px">
+                    <div class="stats-grid" style="margin-bottom:0; flex:1">
+                        <div class="stat-card border-left-blue" style="padding:10px"><div class="stat-title">Total Paineis</div><div class="stat-value" id="painel-total">0</div></div>
+                        <div class="stat-card border-left-green" style="padding:10px"><div class="stat-title">Online</div><div class="stat-value" id="painel-online" style="color:var(--success)">0</div></div>
+                        <div class="stat-card border-left-red" style="padding:10px"><div class="stat-title">Offline</div><div class="stat-value" id="painel-offline" style="color:var(--danger)">0</div></div>
+                    </div>
+                    <button class="btn-success" onclick="openAddPainelModal()"><i class="fa-solid fa-plus"></i> Adicionar Painel</button>
+                    <button class="btn-primary" onclick="checkAllPaineis()" id="btn-check-all-paineis"><i class="fa-solid fa-rotate"></i> Verificar Todos</button>
+                </div>
+                <!-- TABELA -->
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title"><i class="fa-solid fa-tv" style="color:#f97316"></i> Paineis Cadastrados</div>
+                        <div class="search-box" style="position:relative">
+                            <i class="fa-solid fa-search" style="position:absolute; left:10px; top:50%; transform:translateY(-50%); color:var(--text-muted); font-size:0.7rem"></i>
+                            <input type="text" id="painelSearch" placeholder="Buscar..." onkeyup="filterPaineis()" style="background:var(--bg-body); border:1px solid var(--border); padding:6px 10px 6px 30px; border-radius:4px; color:var(--text-main); font-size:0.85rem; width:200px">
+                        </div>
+                    </div>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th width="50">St</th><th>Unidade</th><th>Setor</th><th>IP</th>
+                                <th width="120">Navegador</th><th width="150">Audio</th><th width="140">Acoes</th>
+                            </tr>
+                        </thead>
+                        <tbody id="painelTableBody">
+                            <tr><td colspan="7" style="text-align:center; padding:30px; color:var(--text-muted)">Carregando...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <!-- COMANDOS + TERMINAL -->
+                <div style="display:flex; gap:20px; flex-wrap:wrap">
+                    <div class="card" style="flex:2; min-width:400px; margin-bottom:0">
+                        <div class="card-header">
+                            <div class="card-title"><i class="fa-solid fa-terminal" style="color:#10b981"></i> Comandos Rapidos</div>
+                            <div style="font-size:0.75rem; color:var(--text-muted)">Painel: <strong id="painel-selected-label" style="color:var(--info)">Nenhum</strong></div>
+                        </div>
+                        <div style="padding:15px; display:grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap:8px" id="cmdPalette"></div>
+                    </div>
+                    <div class="card" style="flex:1.5; min-width:350px; margin-bottom:0">
+                        <div class="card-header">
+                            <div class="card-title"><i class="fa-solid fa-code" style="color:#8b5cf6"></i> Terminal SSH</div>
+                            <button class="btn-mini" onclick="limparTerminal()" title="Limpar"><i class="fa-solid fa-broom"></i></button>
+                        </div>
+                        <div style="background:#0f172a; padding:10px; border-radius:0 0 8px 8px; font-family:'Consolas',monospace; font-size:0.8rem; color:#38a169; height:300px; overflow-y:auto" id="terminalOutput">
+                            <div style="color:#64748b">Selecione um painel e digite um comando...</div>
+                        </div>
+                        <div style="display:flex; gap:5px; padding:10px; background:var(--bg-card); border-top:1px solid var(--border)">
+                            <span style="color:#10b981; font-family:monospace; font-weight:700; align-self:center">$&gt;</span>
+                            <input type="text" id="terminalInput" placeholder="Comando SSH..." style="flex:1; background:var(--bg-body); border:1px solid var(--border); padding:8px 10px; border-radius:4px; color:var(--text-main); font-family:monospace; font-size:0.85rem" onkeydown="if(event.key==='Enter')execTerminalCmd()">
+                            <button class="btn-primary" onclick="execTerminalCmd()" style="padding:8px 15px"><i class="fa-solid fa-play"></i></button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div id="tools-geral-container" class="unit-container hidden" style="padding:20px;">
+                <!-- Barra de destino do computador -->
+                <div class="card" style="margin-bottom:16px">
+                    <div class="tool-target-bar">
+                        <div class="tool-target-field">
+                            <label for="tools-host-select"><i class="fa-solid fa-desktop" style="color:var(--info)"></i> Computador / IP</label>
+                            <select id="tools-host-select">
+                                <option value="">— Selecione um computador —</option>
+                            </select>
+                        </div>
+                        <div class="tool-target-field">
+                            <label for="tools-host-input"><i class="fa-solid fa-terminal" style="color:var(--warning)"></i> Hostname / IP manual</label>
+                            <input type="text" id="tools-host-input" placeholder="ex.: PC-0128 ou 10.0.0.54">
+                        </div>
+                        <div class="tool-target-status">
+                            <span id="tools-host-status" class="tool-status-dot">○</span>
+                            <span id="tools-host-status-txt">Nenhum computador selecionado</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Grade de seções de ações -->
+                <div class="tool-sections">
+                    <div class="card tool-sec cat-diag">
+                        <div class="card-header"><span class="card-title"><i class="fa-solid fa-gauge-high" style="color:var(--info)"></i> Diagnóstico</span></div>
+                        <div class="card-body tool-sec-body">
+                            <button class="tool-btn cat-diag" onclick="runToolGeral('listar_programas','listar_programas',{})"><i class="fa-solid fa-list"></i> Listar Programas</button>
+                            <button class="tool-btn cat-diag" onclick="runToolGeral('consultar_disco','consultar_disco',{})"><i class="fa-solid fa-hard-drive"></i> Consultar Disco</button>
+                            <button class="tool-btn cat-diag" onclick="runToolGeral('listar_impressoras','listar_impressoras',{})"><i class="fa-solid fa-print"></i> Listar Impressoras</button>
+                        </div>
+                    </div>
+                    <div class="card tool-sec cat-imp">
+                        <div class="card-header"><span class="card-title"><i class="fa-solid fa-pen-to-square" style="color:#f59e0b"></i> Impressoras</span></div>
+                        <div class="card-body tool-sec-body">
+                            <button class="tool-btn cat-imp" onclick="toolGeralRemoverImpressora()"><i class="fa-solid fa-circle-minus"></i> Remover Impressora</button>
+                            <button class="tool-btn cat-imp" onclick="toolGeralInstalarImpressora()"><i class="fa-solid fa-plus"></i> Instalar por IP</button>
+                        </div>
+                    </div>
+                    <div class="card tool-sec cat-inst">
+                        <div class="card-header"><span class="card-title"><i class="fa-solid fa-download" style="color:#8b5cf6"></i> Instalação / Programas</span></div>
+                        <div class="card-body tool-sec-body">
+                            <button class="tool-btn cat-inst" onclick="toolGeralDesinstalarPrograma()"><i class="fa-solid fa-circle-xmark"></i> Desinstalar Programa</button>
+                            <button class="tool-btn cat-inst" onclick="runToolGeral('instalar_anydesk','instalar_anydesk',{versao:'NOVO'})"><i class="fa-solid fa-display"></i> AnyDesk</button>
+                            <button class="tool-btn cat-inst" onclick="runToolGeral('instalar_rustdesk','instalar_rustdesk',{})"><i class="fa-solid fa-cloud"></i> RustDesk</button>
+                            <button class="tool-btn cat-inst" onclick="runToolGeral('atualizar_chrome','atualizar_chrome',{})"><i class="fa-brands fa-chrome"></i> Atualizar Chrome</button>
+                            <button class="tool-btn cat-inst" onclick="runToolGeral('corrigir_idioma_chrome','corrigir_idioma_chrome',{})"><i class="fa-solid fa-globe"></i> Idioma Chrome</button>
+                        </div>
+                    </div>
+                    <div class="card tool-sec cat-perf">
+                        <div class="card-header"><span class="card-title"><i class="fa-solid fa-user-slash" style="color:#ef4444"></i> Perfis / Energia</span></div>
+                        <div class="card-body tool-sec-body">
+                            <button class="tool-btn cat-perf" onclick="runToolGeral('limpar_perfis','limpar_perfis',{})"><i class="fa-solid fa-broom"></i> Limpar Perfis</button>
+                            <button class="tool-btn cat-perf" onclick="runToolGeral('reiniciar','reiniciar',{})"><i class="fa-solid fa-rotate-right"></i> Reiniciar</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Console de saída (terminal) -->
+                <div class="card" style="margin-bottom:0">
+                    <div class="terminal">
+                        <div class="terminal-bar">
+                            <span class="terminal-dot red"></span><span class="terminal-dot yellow"></span><span class="terminal-dot green"></span>
+                            <span class="terminal-title"><i class="fa-solid fa-terminal"></i> monitor-ti@gerenciamento — <span id="tools-terminal-host">nenhum host</span></span>
+                        </div>
+                        <div class="tool-result" id="tools-output"><i class="fa-solid fa-circle-info"></i> Selecione um computador e uma ação acima. O resultado aparecerá aqui.</div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <style>
+        .rodape-user { display:flex; align-items:center; gap:10px; text-align:left; margin-bottom:10px; }
+        .rodape-avatar { width:34px; height:34px; border-radius:50%; background:linear-gradient(135deg,#3b82f6,#8b5cf6); color:#fff; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:0.95rem; flex-shrink:0; }
+        .rodape-user-info { display:flex; flex-direction:column; min-width:0; flex:1; line-height:1.25; }
+        .rodape-user-info b { color:#e2e8f0; font-size:0.85rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+        .rodape-user-info small { color:#94a3b8; font-size:0.7rem; }
+        .rodape-icone { color:#94a3b8; width:30px; height:30px; display:flex; align-items:center; justify-content:center; border-radius:6px; text-decoration:none; }
+        .rodape-icone:hover { background:rgba(255,255,255,0.08); color:#f87171; }
+        .rodape-acoes { display:flex; gap:6px; }
+        .rodape-btn { flex:1; display:flex; align-items:center; justify-content:center; gap:6px; padding:7px 6px; border-radius:6px; background:rgba(255,255,255,0.06); color:#cbd5e1; text-decoration:none; font-size:0.72rem; white-space:nowrap; }
+        .rodape-btn:hover { background:rgba(255,255,255,0.12); color:#fff; }
+        .rodape-rede { margin-top:8px; padding:6px 8px; border-radius:6px; background:rgba(255,255,255,0.04); font-size:0.72rem; color:#94a3b8; }
+        .rodape-rede a { color:#cbd5e1; text-decoration:none; } .rodape-rede a:hover { color:#fff; }
+        .rodape-credito { margin-top:10px; font-size:0.66rem; color:#64748b; }
+        .sobre-hero { text-align:center; padding:26px 20px 18px; background:linear-gradient(135deg,#1e293b,#312e81); color:#fff; border-radius:0 0 18px 18px; }
+        .sobre-logo { width:64px; height:64px; border-radius:18px; background:rgba(255,255,255,0.12); display:inline-flex; align-items:center; justify-content:center; font-size:1.9rem; margin-bottom:10px; }
+        .sobre-hero h2 { margin:0; font-size:1.4rem; } .sobre-hero p { margin:4px 0 0; font-size:0.85rem; color:#c7d2fe; }
+        .sobre-versao { display:inline-block; margin-top:10px; padding:3px 12px; border-radius:20px; background:rgba(255,255,255,0.15); font-size:0.72rem; }
+        .sobre-corpo { padding:18px 22px 22px; }
+        .sobre-corpo h4 { margin:16px 0 8px; font-size:0.8rem; text-transform:uppercase; letter-spacing:0.06em; color:var(--text-muted); }
+        .sobre-recursos { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:8px; }
+        .sobre-recurso { padding:10px; border:1px solid var(--border); border-radius:10px; font-size:0.8rem; background:var(--bg-card); }
+        .sobre-recurso i { display:block; font-size:1.1rem; margin-bottom:5px; color:var(--info); }
+        .sobre-equipe { display:flex; flex-wrap:wrap; gap:10px; }
+        .sobre-pessoa { display:flex; align-items:center; gap:8px; padding:6px 12px 6px 6px; border:1px solid var(--border); border-radius:30px; font-size:0.85rem; font-weight:600; }
+        .sobre-pessoa span { width:28px; height:28px; border-radius:50%; background:linear-gradient(135deg,#3b82f6,#8b5cf6); color:#fff; display:flex; align-items:center; justify-content:center; font-size:0.8rem; }
+        .sobre-rodape { margin-top:18px; text-align:center; font-size:0.72rem; color:var(--text-muted); }
+    </style>
+    <div id="sobreModal" class="modal" onclick="if(event.target===this)this.style.display='none'">
+        <div class="modal-content" style="width:560px; max-width:95%; overflow:hidden; padding:0;">
+            <div class="sobre-hero">
+                <div class="sobre-logo"><i class="fa-solid fa-earth-americas"></i></div>
+                <h2>Monitor TI</h2>
+                <p>Gestão inteligente de ativos de rede</p>
+                <span class="sobre-versao">Versão 1.0 &middot; Standalone</span>
+            </div>
+            <div class="sobre-corpo">
+                <h4>O que o sistema faz</h4>
+                <div class="sobre-recursos">
+                    <div class="sobre-recurso"><i class="fa-solid fa-heart-pulse"></i>Status em tempo real de PCs e impressoras</div>
+                    <div class="sobre-recurso"><i class="fa-solid fa-screwdriver-wrench"></i>Ferramentas de gestão remota</div>
+                    <div class="sobre-recurso"><i class="fa-solid fa-tv"></i>Painéis de TV (Raspberry Pi)</div>
+                    <div class="sobre-recurso"><i class="fa-solid fa-clock-rotate-left"></i>Histórico de disponibilidade e notas</div>
+                    <div class="sobre-recurso"><i class="fa-solid fa-user-shield"></i>Usuários, papéis e auditoria</div>
+                    <div class="sobre-recurso"><i class="fa-solid fa-mobile-screen"></i>Funciona no celular</div>
+                </div>
+                <h4>Criadores</h4>
+                <div class="sobre-equipe">
+                    <div class="sobre-pessoa"><span>I</span>Ismael Silva</div>
+                    <div class="sobre-pessoa"><span>F</span>Fabio Lira</div>
+                    <div class="sobre-pessoa"><span>M</span>Matthews Henrique</div>
+                </div>
+                <h4 style="display:flex;justify-content:space-between;align-items:center">Equipe
+                    {% if papel == 'admin' %}<a href="#" id="equipe-editar" onclick="editarEquipe();return false" style="font-size:0.72rem;text-transform:none;letter-spacing:0;color:var(--info);text-decoration:none"><i class="fa-solid fa-pen"></i> Escolher</a>{% endif %}
+                </h4>
+                <div class="sobre-equipe" id="equipe-lista">
+                    {% for n in equipe %}<div class="sobre-pessoa"><span>{{ n[:1]|upper }}</span>{{ n }}</div>{% endfor %}
+                    {% if not equipe %}<div style="font-size:0.8rem;color:var(--text-muted)">{% if papel == 'admin' %}Ninguém escolhido ainda. Clique em “Escolher” e marque as pessoas que usam o sistema.{% else %}Nenhuma pessoa listada.{% endif %}</div>{% endif %}
+                </div>
+                <div id="equipe-editor" style="display:none;margin-top:10px">
+                    <div id="equipe-opcoes" style="display:flex;flex-direction:column;gap:6px;max-height:180px;overflow:auto;padding:8px;border:1px solid var(--border);border-radius:8px;font-size:0.85rem"></div>
+                    <div style="margin-top:8px;display:flex;gap:8px">
+                        <button class="btn-mini" onclick="salvarEquipe()" style="padding:6px 16px">Salvar equipe</button>
+                        <button class="btn-mini" onclick="document.getElementById('equipe-editor').style.display='none'" style="padding:6px 16px">Cancelar</button>
+                    </div>
+                </div>
+                {% if org_name %}<h4>Organização</h4><div style="font-size:0.9rem">{{ org_name }}</div>{% endif %}
+                <div class="sobre-rodape">&copy; 2026 Monitor TI &middot; Licença MIT</div>
+                <div style="text-align:center;margin-top:12px"><button class="btn-mini" onclick="document.getElementById('sobreModal').style.display='none'" style="padding:7px 22px">Fechar</button></div>
+            </div>
+        </div>
+    </div>
+            <div id="scannerModal" class="modal">
+        <div class="modal-content" style="width:1000px; max-width:95%;">
+            <div class="modal-header">
+                <span><i class="fa-solid fa-radar"></i> Scanner de Rede</span>
+                <span onclick="document.getElementById('scannerModal').style.display='none'" style="cursor:pointer">&times;</span>
+            </div>
+            <div class="modal-body" style="padding: 20px;">
+                <div class="row" style="display: flex; gap: 20px; align-items: flex-end;">
+                    <div style="flex: 1;">
+                        <label style="display:block; margin-bottom:5px; font-weight:600">Importar para Unidade:</label>
+                        <select id="scannerTargetUnit" class="form-control" style="width:100%; padding:10px; border-radius:4px; border:1px solid #444; background:#1e1e1e; color:white;">
+                            {% for u in all_data.keys() %}
+                            <option value="{{ u }}">{{ u }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div style="flex: 1;">
+                        <label style="display:block; margin-bottom:5px; font-weight:600">Range de IP (CIDR):</label>
+                        <input type="text" id="scannerIpRange" value="192.168.0.0/24" style="width:100%; padding:10px; border-radius:4px; border:1px solid #444; background:#1e1e1e; color:white;">
+                    </div>
+                    <div style="flex: 0 0 150px;">
+                        <button class="btn-primary" style="width:100%; height:40px;" onclick="startNetworkScan()">
+                            <i class="fa-solid fa-search"></i> Escanear
+                        </button>
+                    </div>
+                </div>
+                
+                <div id="scanLoading" style="display:none; text-align:center; padding: 40px;">
+                    <i class="fa-solid fa-circle-notch fa-spin" style="font-size:2rem; color:var(--info)"></i>
+                    <p style="margin-top:10px;">Varrendo rede... isso pode levar alguns segundos.</p>
+                </div>
+
+                <div id="scanResults" style="display:none; margin-top:20px;">
+                    <div style="max-height: 400px; overflow-y: auto; border: 1px solid var(--border); border-radius: 4px;">
+                        <table class="table" style="width:100%; border-collapse: collapse;">
+                            <thead style="background: #1e1e1e; position: sticky; top: 0;">
+                                <tr>
+                                    <th style="padding:10px; text-align:center; width: 50px;"><input type="checkbox" id="selectAllScanner" onclick="toggleAllScanner(this)"></th>
+                                    <th style="padding:10px;">Status</th>
+                                    <th style="padding:10px;">Tipo</th>
+                                    <th style="padding:10px;">IP / Hostname</th>
+                                    <th style="padding:10px;">Detalhes</th>
+                                    <th style="padding:10px;">Definir Setor</th>
+                                </tr>
+                            </thead>
+                            <tbody id="scannerTableBody"></tbody>
+                        </table>
+                    </div>
+                    <div style="margin-top:15px; text-align:right;">
+                        <button class="btn-success" onclick="importSelectedScanner()">
+                            <i class="fa-solid fa-file-import"></i> Importar Selecionados
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="addModal" class="modal"><div class="modal-content" style="width:400px; margin-top:10%;"><div class="modal-header"><span>Adicionar Novo Dispositivo</span><span onclick="document.getElementById('addModal').style.display='none'" style="cursor:pointer">&times;</span></div><div class="modal-body"><input type="hidden" id="addUnit"><div class="form-group"><label>Tipo de Dispositivo</label><select id="addTypeSelector"><option value="PC">Computador</option><option value="IMP">Impressora</option><option value="TV">TV / Painel</option><option value="Outro">Outro</option></select></div><div class="form-group"><label>Selecione o Andar</label><select id="addFloorSelector"></select></div><div class="form-group"><label>Setor</label><input type="text" id="addSectorInput" placeholder="Ex: Recepção"></div><div class="form-group"><label>Hostname ou IP</label><input type="text" id="addHostInput" placeholder="Ex: PC-01"></div></div><div class="modal-footer"><button class="btn-primary" onclick="submitAdd()">Adicionar</button></div></div></div>
+    <div id="addFloorModal" class="modal"><div class="modal-content" style="width:450px; margin-top:10%;"><div class="modal-header"><span>Criar Novo Andar</span><span onclick="document.getElementById('addFloorModal').style.display='none'" style="cursor:pointer">&times;</span></div><div class="modal-body"><input type="hidden" id="addFloorUnit"><div class="form-group"><label>Nome do Novo Andar</label><input type="text" id="newFloorName" placeholder="Ex: Térreo"></div><div class="form-group"><label>Posição / Ordem</label><select id="floorPositionSelector"></select><small style="color:var(--text-muted)">Escolha onde este andar deve aparecer na lista.</small></div></div><div class="modal-footer"><button class="btn-primary" onclick="submitAddFloor()">Criar Andar</button></div></div></div>
+    <div id="editModal" class="modal"><div class="modal-content" style="width:400px; margin-top:10%;"><div class="modal-header"><span>Editar Dispositivo</span><span onclick="document.getElementById('editModal').style.display='none'" style="cursor:pointer">&times;</span></div><div class="modal-body"><input type="hidden" id="editUnit"><input type="hidden" id="editOldFloor"><input type="hidden" id="editOldSector"><input type="hidden" id="editOldHost"><div class="form-group"><label>Andar</label><select id="editFloorSelector"></select></div><div class="form-group"><label>Setor</label><input type="text" id="editSectorInput"></div><div class="form-group"><label>Hostname / IP</label><input type="text" id="editHostInput"></div></div><div class="modal-footer"><button class="btn-primary" onclick="submitEdit()">Salvar Alterações</button></div></div></div>
+    <div id="builderModal" class="modal"><div class="modal-content"><div class="modal-header"><span>Criar Nova Unidade</span><span onclick="document.getElementById('builderModal').style.display='none'" style="cursor:pointer">&times;</span></div><div class="modal-body"><div style="margin-bottom:20px"><label style="display:block; font-weight:600; margin-bottom:5px">Nome da Unidade</label><input type="text" id="unitName" class="floor-input" style="width:100%" placeholder="Ex: Matriz Administrativa"></div><div id="floorsContainer"></div><button class="btn-add-floor" onclick="addFloor()"><i class="fa-solid fa-plus"></i> Adicionar Andar</button></div><div class="modal-footer"><button class="btn-primary" onclick="submitBuilder()">Salvar Unidade</button></div></div></div>
+
+    <div id="peripheralModal" class="modal">
+        <div class="modal-content" style="width:900px; max-width:95%;">
+            <div class="modal-header">
+                <span><i class="fa-solid fa-desktop"></i> Computador: <span id="peri-host-title"></span></span>
+                <span onclick="document.getElementById('peripheralModal').style.display='none'" style="cursor:pointer">&times;</span>
+            </div>
+            <div class="tool-tabs">
+                <button class="tool-tab active" id="tab-peri" onclick="switchPeriTab('peri')"><i class="fa-solid fa-plug"></i> Periféricos</button>
+                <button class="tool-tab" id="tab-tools" onclick="switchPeriTab('tools')"><i class="fa-solid fa-screwdriver-wrench"></i> Ferramentas de Gestão</button>
+            </div>
+            <div class="modal-body" style="background: #1e293b; padding:10px;">
+                <div id="peri-panel">
+                    <div id="peri-loading" style="text-align:center; color:white; padding:40px;">
+                        <i class="fa-solid fa-circle-notch fa-spin" style="font-size:2rem;"></i><br><br>
+                        Varrendo portas USB, Monitores e Impressoras...<br>
+                        <small style="opacity:0.6">(Isso pode levar até 60 segundos via PsExec)</small>
+                    </div>
+                    <div id="peri-content" style="display:none;">
+                        <div class="peripheral-output" id="peri-output-text"></div>
+                    </div>
+                </div>
+                <div id="tools-panel" style="display:none;">
+                    <div style="margin-bottom:8px; font-size:0.8rem; color:#94a3b8">
+                        Operações de manutenção remota em <b class="tool-host-label">--</b>. O host é capturado automaticamente.
+                    </div>
+                    <div class="tool-category-label"><i class="fa-solid fa-gauge-high"></i> Diagnóstico</div>
+                    <div class="tool-grid">
+                        <button class="tool-btn" onclick="runTool('listar_programas','listar_programas',{},this)"><i class="fa-solid fa-list"></i> Listar Programas</button>
+                        <button class="tool-btn" onclick="runTool('consultar_disco','consultar_disco',{},this)"><i class="fa-solid fa-hard-drive"></i> Consultar Disco</button>
+                        <button class="tool-btn" onclick="runTool('listar_impressoras','listar_impressoras',{},this)"><i class="fa-solid fa-print"></i> Listar Impressoras</button>
+                    </div>
+                    <div class="tool-category-label"><i class="fa-solid fa-pen-to-square"></i> Impressoras</div>
+                    <div class="tool-grid">
+                        <button class="tool-btn" onclick="toolRemoverImpressora()"><i class="fa-solid fa-circle-minus"></i> Remover Impressora</button>
+                        <button class="tool-btn" onclick="toolInstalarImpressora()"><i class="fa-solid fa-plus"></i> Instalar Impressora por IP</button>
+                    </div>
+                    <div class="tool-category-label"><i class="fa-solid fa-download"></i> Instalação / Programas</div>
+                    <div class="tool-grid">
+                        <button class="tool-btn" onclick="toolDesinstalarPrograma()"><i class="fa-solid fa-circle-xmark"></i> Desinstalar Programa</button>
+                        <button class="tool-btn" onclick="runTool('instalar_anydesk','instalar_anydesk',{versao:'NOVO'},this)"><i class="fa-solid fa-display"></i> Instalar AnyDesk</button>
+                        <button class="tool-btn" onclick="runTool('instalar_rustdesk','instalar_rustdesk',{},this)"><i class="fa-solid fa-cloud"></i> Instalar RustDesk</button>
+                        <button class="tool-btn" onclick="runTool('atualizar_chrome','atualizar_chrome',{},this)"><i class="fa-brands fa-chrome"></i> Atualizar Chrome</button>
+                        <button class="tool-btn" onclick="runTool('corrigir_idioma_chrome','corrigir_idioma_chrome',{},this)"><i class="fa-solid fa-globe"></i> Corrigir Idioma Chrome (pt-BR)</button>
+                    </div>
+                    <div class="tool-category-label"><i class="fa-solid fa-user-slash"></i> Perfis / Atalhos</div>
+                    <div class="tool-grid">
+                        <button class="tool-btn" onclick="runTool('limpar_perfis','limpar_perfis',{},this)"><i class="fa-solid fa-broom"></i> Limpar Perfis (Delprof2)</button>
+                    </div>
+                    <div class="tool-category-label"><i class="fa-solid fa-power-off"></i> Energia</div>
+                    <div class="tool-grid">
+                        <button class="tool-btn" onclick="runTool('reiniciar','reiniciar',{},this)"><i class="fa-solid fa-rotate-right"></i> Reiniciar</button>
+                    </div>
+                    <div class="tool-result" id="tool-output"><i class="fa-solid fa-circle-info"></i> Selecione uma ferramenta acima. O resultado aparece aqui.</div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-primary" onclick="document.getElementById('peripheralModal').style.display='none'">Fechar</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="serialModal" class="modal">
+        <div class="modal-content" style="width:520px; max-width:92%;">
+            <div class="modal-header">
+                <span><i class="fa-solid fa-display"></i> Número(s) de Série do Monitor: <span id="serial-host-title"></span></span>
+                <span onclick="document.getElementById('serialModal').style.display='none'" style="cursor:pointer">&times;</span>
+            </div>
+            <div class="modal-body" style="background: #1e293b;">
+                <div id="serial-loading" style="text-align:center; color:white; padding:30px;"><i class="fa-solid fa-circle-notch fa-spin" style="font-size:1.5rem;"></i><br>Consultando série do monitor...</div>
+                <div id="serial-content" style="display:none;">
+                    <div class="peripheral-output" id="serial-output-text" style="height:auto; min-height:80px;"></div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-primary" onclick="document.getElementById('serialModal').style.display='none'">Fechar</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="redeModal" class="modal"><div class="modal-content" style="width:480px; margin-top:6%;">
+        <div class="modal-header"><span><i class="fa-solid fa-key"></i> Conta de rede (administrador)</span><span onclick="fecharRede(false)" style="cursor:pointer">&times;</span></div>
+        <div class="modal-body">
+            <p style="margin:0 0 10px;font-size:0.85rem;color:var(--text-muted)">Para esta ação, informe a <b>sua</b> conta de rede com permissão de administrador. O sistema faz sozinho um teste interno, somente leitura, para confirmar que a conta é <b>administradora</b> — sem essa validação a gestão remota fica bloqueada. A conta é usada <b>só nesta sessão</b>: fica apenas na memória do servidor, vale até a sua sessão cair (ou você sair) e <b>nunca é salva</b>. Você só informa uma vez.</p>
+            <div class="form-group"><label>Usuário (ex.: DOMINIO\usuario)</label><input type="text" id="rede-user" autocomplete="username"></div>
+            <div class="form-group"><label>Senha</label><input type="password" id="rede-senha" autocomplete="current-password" onkeydown="if(event.key==='Enter')redeEntrar()"></div>
+            <div id="rede-res" style="margin-top:8px"></div>
+        </div>
+        <div class="modal-footer"><button class="btn-icon" style="width:auto;padding:6px 14px" onclick="fecharRede(false)">Cancelar</button> <button class="btn-primary" id="rede-btn" onclick="redeEntrar()">Entrar</button></div>
+    </div></div>
+
+    <div id="notasModal" class="modal"><div class="modal-content" style="width:560px; margin-top:5%;">
+        <div class="modal-header"><span><i class="fa-solid fa-note-sticky"></i> <span id="notas-host"></span></span><span onclick="fecharNotas()" style="cursor:pointer">&times;</span></div>
+        <div class="modal-body">
+            <div id="notas-hist" style="margin-bottom:14px"></div>
+            <div id="notas-form" style="display:none">
+                <textarea id="notas-texto" rows="3" maxlength="2000" placeholder="Escreva uma anotação (ex.: trocou a fonte, monitor com defeito...)" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;font-family:inherit;background:var(--bg-card);color:var(--text-main)"></textarea>
+                <button class="btn-primary" style="margin-top:8px" onclick="salvarNota()">Adicionar anotação</button>
+            </div>
+            <div id="notas-lista" style="margin-top:14px"></div>
+        </div>
+    </div></div>
+
+    <script>
+        // Escapa texto antes de inserir em innerHTML / atributos (dados vêm da planilha e das máquinas da rede)
+        const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+        // Argumento de string seguro para usar dentro de onclick="..." gerado por JS
+        const jsArg = s => esc(JSON.stringify(String(s ?? '')));
+
+        // Sessão expirada / ação restrita: manda para o login e volta para cá depois
+        (function () {
+            const _fetch = window.fetch.bind(window);
+            window.fetch = function () {
+                const args = arguments;
+                return _fetch.apply(null, args).then(function (res) {
+                    if (res.status === 401) { window.location.href = '/login?next=' + encodeURIComponent(window.location.pathname); }
+                    // 428 = a ação precisa da conta de REDE da pessoa: pede o login e repete a ação
+                    if (res.status === 428) {
+                        return res.clone().json().catch(() => ({})).then(j => pedirContaRede(j.host_sugerido))
+                            .then(ok => ok ? _fetch.apply(null, args) : res);
+                    }
+                    return res;
+                });
+            };
+        })();
+
+        // ===================== CONTA DE REDE (por pessoa, sem conta fixa) =====================
+        let _redeResolve = null, _redeHost = '';
+        function pedirContaRede(host) {
+            return new Promise(resolve => {
+                if (_redeResolve) _redeResolve(false);
+                _redeResolve = resolve;
+                _redeHost = host || '';
+                document.getElementById('rede-senha').value = '';
+                document.getElementById('rede-res').innerHTML = '';
+                document.getElementById('redeModal').style.display = 'block';
+                setTimeout(() => document.getElementById(document.getElementById('rede-user').value ? 'rede-senha' : 'rede-user').focus(), 100);
+            });
+        }
+        function fecharRede(ok) {
+            document.getElementById('redeModal').style.display = 'none';
+            document.getElementById('rede-senha').value = '';
+            if (_redeResolve) { _redeResolve(!!ok); _redeResolve = null; }
+        }
+        async function redeEntrar() {
+            const btn = document.getElementById('rede-btn'), res = document.getElementById('rede-res');
+            btn.disabled = true; btn.textContent = 'Validando (pode levar alguns segundos)...';
+            const r = await (await fetch('/api/rede/entrar', { method: 'POST', headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ host: _redeHost, usuario: document.getElementById('rede-user').value, senha: document.getElementById('rede-senha').value }) })).json()
+                .catch(() => ({ ok: false, erro: 'Sem conexão com o servidor.' }));
+            btn.disabled = false; btn.textContent = 'Entrar';
+            const passos = (r.passos || []).map(p => `<div style="font-size:0.85rem;margin:3px 0">${p.ok === true ? '✅' : p.ok === false ? '❌' : '⚠️'} <b>${esc(p.nome)}</b><br><small style="color:var(--text-muted)">${esc(p.detalhe)}</small></div>`).join('');
+            if (r.ok) { res.innerHTML = passos + `<div style="color:var(--success);font-weight:600;margin-top:6px">Conta validada como administradora. Não será pedida de novo nesta sessão.</div>`; atualizarRede(); setTimeout(() => fecharRede(true), 700); }
+            else res.innerHTML = passos + `<div style="color:var(--danger);font-weight:600;margin-top:6px">${esc(r.erro || 'Não foi possível validar.')}</div>`;
+        }
+        // Acessibilidade: toda janela (.modal) é um diálogo e fecha com Esc
+        document.querySelectorAll('.modal').forEach(m => { m.setAttribute('role', 'dialog'); m.setAttribute('aria-modal', 'true'); });
+        document.addEventListener('keydown', e => {
+            if (e.key !== 'Escape') return;
+            const abertas = [...document.querySelectorAll('.modal')].filter(m => m.style.display === 'block' || m.style.display === 'flex');
+            if (!abertas.length) return;
+            const topo = abertas[abertas.length - 1];
+            if (topo.id === 'redeModal') fecharRede(false); else topo.style.display = 'none';   // a janela da conta de rede tem uma ação pendente a resolver
+        });
+        let _equipeAtual = {{ equipe|tojson }};
+        async function editarEquipe() {
+            const r = await (await fetch('/api/usuarios')).json().catch(() => ({}));
+            if (!r.ok) return;
+            const box = document.getElementById('equipe-opcoes'); box.innerHTML = '';
+            r.usuarios.filter(u => u.ativo).forEach(u => {
+                const l = document.createElement('label'); l.style.cssText = 'display:flex;align-items:center;gap:8px;cursor:pointer';
+                const c = document.createElement('input'); c.type = 'checkbox'; c.value = u.usuario; c.checked = _equipeAtual.includes(u.usuario);
+                l.append(c, document.createTextNode(u.usuario + ' (' + u.papel + ')')); box.appendChild(l);
+            });
+            if (!box.children.length) box.textContent = 'Nenhum usuário cadastrado.';
+            document.getElementById('equipe-editor').style.display = 'block';
+        }
+        async function salvarEquipe() {
+            const nomes = [...document.querySelectorAll('#equipe-opcoes input:checked')].map(c => c.value);
+            const r = await (await fetch('/api/config', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ equipe_sobre: nomes.join(','), limpar: nomes.length ? [] : ['equipe_sobre'] }) })).json().catch(() => ({}));
+            if (!r.ok) { alert('Não foi possível salvar a equipe.'); return; }
+            _equipeAtual = nomes;
+            const lista = document.getElementById('equipe-lista'); lista.innerHTML = '';
+            nomes.forEach(n => { const d = document.createElement('div'); d.className = 'sobre-pessoa'; const s = document.createElement('span'); s.textContent = n.charAt(0).toUpperCase(); d.append(s, document.createTextNode(n)); lista.appendChild(d); });
+            if (!nomes.length) lista.innerHTML = '<div style="font-size:0.8rem;color:var(--text-muted)">Ninguém escolhido ainda.</div>';
+            document.getElementById('equipe-editor').style.display = 'none';
+        }
+        function abrirSobre() { document.getElementById('sobreModal').style.display = 'block'; }
+        async function atualizarRede() {
+            const el = document.getElementById('rede-status'); if (!el) return;
+            const e = await (await fetch('/api/rede/estado')).json().catch(() => ({}));
+            el.innerHTML = e.ativo
+                ? `<i class="fa-solid fa-key" style="color:var(--success)"></i> ${esc(e.usuario)} &middot; <a href="#" class="admin-link" onclick="redeSair();return false">desconectar</a>`
+                : `<a href="#" class="admin-link" onclick="pedirContaRede('');return false"><i class="fa-solid fa-key"></i> Conta de rede</a>`;
+        }
+        async function redeSair() { await fetch('/api/rede/sair', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: '{}' }); atualizarRede(); }
+        // Ao entrar no sistema, o administrador já recebe o pedido da conta de rede (se ainda não tiver uma válida)
+        const PAPEL = {{ papel|tojson }};
+        async function promptRedeInicial(forcar) {
+            if (PAPEL !== 'admin') return;
+            try { if (!forcar && sessionStorage.getItem('redeRecusada') === '1') return; } catch (e) {}
+            const e = await (await fetch('/api/rede/estado')).json().catch(() => ({}));
+            if (e.ativo) return;
+            const ok = await pedirContaRede('');
+            try { if (!ok) sessionStorage.setItem('redeRecusada', '1'); else sessionStorage.removeItem('redeRecusada'); } catch (e2) {}
+        }
+        document.addEventListener('DOMContentLoaded', atualizarRede);
+        setInterval(atualizarRede, 60000);
+
+        let globalHosts = [];
+        {% for u, locs in all_data.items() %}
+            {% for loc, items in locs.items() %}
+                {% for item in items %}
+                    {% if item.tipo == 'PC' or item.tipo == 'IMP' %}
+                    globalHosts.push({ host: {{ item.host|tojson }}, type: {{ item.tipo|tojson }}, id: {{ item.id_uniq|string|tojson }}, unidade: {{ u|tojson }}, setor: {{ loc|tojson }} });
+                    {% endif %}
+                {% endfor %}
+            {% endfor %}
+        {% endfor %}
+
+        let activeController = null;
+        function enterSystem(event) { if(event) event.preventDefault(); document.getElementById('lobby-screen').style.display = 'none'; document.querySelector('.sidebar').style.display = 'flex'; document.querySelector('.main-content').style.display = 'flex'; sessionStorage.setItem('entered', 'true'); showDashboard(); promptRedeInicial(true); }
+        if(sessionStorage.getItem('entered') === 'true') { document.getElementById('lobby-screen').style.display = 'none'; document.querySelector('.sidebar').style.display = 'flex'; document.querySelector('.main-content').style.display = 'flex'; showDashboard(); promptRedeInicial(false); }
+        let onlineSetPC = new Set(); let onlineSetIMP = new Set(); let firstRunGlobal = true;
+        
+        function startGlobalScan(signal) {
+            let totalPC = parseInt(document.getElementById('dash-total-pc').innerText);
+            let totalIMP = parseInt(document.getElementById('dash-total-imp').innerText);
+            if(firstRunGlobal) { document.getElementById('dash-online-pc').innerText = "0"; document.getElementById('dash-offline-pc').innerText = totalPC; document.getElementById('dash-online-imp').innerText = "0"; firstRunGlobal = false; }
+            let idx = 0; const CONCURRENCY = 20;
+            function updateDisplayPC() { let on = onlineSetPC.size; let off = totalPC - on; if(off < 0) off = 0; document.getElementById('dash-online-pc').innerText = on; document.getElementById('dash-offline-pc').innerText = off; }
+            function updateDisplayIMP() { let on = onlineSetIMP.size; document.getElementById('dash-online-imp').innerText = on; }
+            function processHost(h) {
+                if (signal.aborted) return Promise.resolve();
+                return fetch('/api/check/' + encodeURIComponent(h.host), { signal: signal }).then(r => r.json()).then(data => {
+                    if (signal.aborted) return;
+                    let isOnline = data.online; let isPC = (h.type === 'PC');
+                    if (isPC) {
+                        if (isOnline) { if (!onlineSetPC.has(h.id)) { onlineSetPC.add(h.id); updateDisplayPC(); } } 
+                        else { if (onlineSetPC.has(h.id)) { onlineSetPC.delete(h.id); updateDisplayPC(); } }
+                    } else {
+                        if (isOnline) { if (!onlineSetIMP.has(h.id)) { onlineSetIMP.add(h.id); updateDisplayIMP(); } } 
+                        else { if (onlineSetIMP.has(h.id)) { onlineSetIMP.delete(h.id); updateDisplayIMP(); } }
+                    }
+                }).catch(e => {});
+            }
+            function checkNextBatch() {
+                if (signal.aborted) return;
+                if (idx >= globalHosts.length) { idx = 0; setTimeout(checkNextBatch, 2000); return; }
+                let batch = globalHosts.slice(idx, idx + CONCURRENCY); idx += CONCURRENCY;
+                let promises = batch.map(h => processHost(h));
+                Promise.allSettled(promises).then(() => { setTimeout(checkNextBatch, 50); });
+            }
+            checkNextBatch();
+        }
+        function showDashboard() { if (activeController) activeController.abort(); activeController = new AbortController(); document.querySelectorAll('.unit-container').forEach(d => d.classList.add('hidden')); document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active')); document.getElementById('dashboard-geral').classList.remove('hidden'); document.getElementById('page-title').innerText = "Visão Geral em Tempo Real"; startGlobalScan(activeController.signal); loadPaineisDashboard(activeController.signal); }
+        function switchTab(unitName) { if (activeController) activeController.abort(); activeController = new AbortController(); document.querySelectorAll('.unit-container').forEach(d => d.classList.add('hidden')); document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active')); const targetUnit = document.getElementById('unit-'+unitName); const targetBtn = document.getElementById('btn-'+unitName); if(targetUnit) targetUnit.classList.remove('hidden'); if(targetBtn) targetBtn.classList.add('active'); document.getElementById('page-title').innerText = "Dashboard: " + unitName; document.getElementById('tableSearch').value = ""; filterTable(); startMonitoring(unitName, activeController.signal); }
+        function startMonitoring(unitName, signal) { 
+            const container = document.getElementById('unit-'+unitName); const badges = container.querySelectorAll('.status-pill'); 
+            let idx = 0; let checkedDisks = new Set(); let total = badges.length; let online = 0; let offline = 0; 
+            document.getElementById('count-total-'+unitName).innerText = total; 
+            function updateCounters() { if(!signal.aborted) { document.getElementById('count-online-'+unitName).innerText = online; document.getElementById('count-offline-'+unitName).innerText = offline; } } 
+            function checkNext() { 
+                if (signal.aborted) return; 
+                if (idx >= badges.length) { setTimeout(() => { if(!signal.aborted) { idx=0; checkNext(); } }, 5000); return; } 
+                let el = badges[idx]; let host = el.getAttribute('data-host'); let tipo = el.getAttribute('data-type'); let id = el.id.replace('st-', ''); let txtSpan = el.querySelector('.st-text'); 
+                if (host === 'N/D' || host.includes('SEM IP')) { el.className = "status-pill"; el.style.opacity = "0.5"; txtSpan.textContent = "-"; idx++; setTimeout(checkNext, 20); return; } 
+                fetch('/api/check/' + encodeURIComponent(host), { signal: signal }).then(r => r.json()).then(data => { 
+                    if (signal.aborted) return; document.getElementById('ip-'+id).innerText = data.ip; el.classList.remove('st-loading', 'st-online', 'st-offline'); 
+                    if(data.online) { el.classList.add('st-online'); txtSpan.textContent = "ONLINE"; if(!checkedDisks.has(id)) online++; if (tipo === 'PC' && !checkedDisks.has(id)) { checkDisk(host, id, signal); checkedDisks.add(id); } } 
+                    else { el.classList.add('st-offline'); txtSpan.textContent = "OFFLINE"; if(!checkedDisks.has(id)) offline++; } 
+                    updateCounters(); 
+                }).catch(e => {}); 
+                idx++; setTimeout(checkNext, 50); 
+            } 
+            checkNext(); 
+        }
+
+        // === LÓGICA DE DADOS ===
+        function checkDisk(host, id, signal) { 
+            fetch('/api/details/' + encodeURIComponent(host), { signal: signal })
+            .then(r => r.json())
+            .then(data => { 
+                if (signal.aborted) return; 
+                document.getElementById('disk-stat-' + id).style.display = 'none'; 
+                const resDiv = document.getElementById('disk-res-' + id); 
+                resDiv.style.display = 'block'; 
+                
+                if (data.uptime && data.uptime!=='N/D') document.getElementById('uptime-'+id).innerText = data.uptime; 
+                if (data.ram_total && data.ram_total!=='N/D') document.getElementById('ram-'+id).innerText = data.ram_total; 
+                if (data.modelo && data.modelo!=='N/D') document.getElementById('model-'+id).innerText = data.modelo; 
+                if (data.cpu && data.cpu !== 'N/D') document.getElementById('cpu-'+id).innerText = data.cpu;
+                
+                if (data.serial && data.serial!=='N/D') document.getElementById('serial-'+id).innerText = data.serial; 
+                if (data.user && data.user!=='N/D') document.getElementById('user-'+id).innerText = data.user; 
+                if (data.os && data.os!=='Windows') document.getElementById('os-'+id).innerText = data.os; 
+
+                // --- EXIBE MONITOR NA LISTA COM CLIQUE (monitor = só serial; ferramentas = periféricos+ferramentas) ---
+                if (data.monitors && data.monitors.length > 0) {
+                    let monHtml = data.monitors.map(m =>
+                        `<span class="monitor-link" onclick="openMonitorSerial(${jsArg(host)})" title="Clique para ver o número de série do monitor"><i class="fa-solid fa-desktop" style="font-size:0.6rem"></i> ${esc(m.modelo)}</span>`
+                    ).join(' <span style="opacity:0.3">|</span> ') + ` <span style="opacity:0.3">·</span> <span class="gestao-link" onclick="openPeripheralModal(${jsArg(host)})" title="Ferramentas de Gestão: periféricos, programas, impressoras e mais"><i class="fa-solid fa-screwdriver-wrench" style="font-size:0.6rem"></i> Ferramentas</span>`;
+                    let divMon = document.getElementById('monitor-'+id);
+                    if(divMon) { divMon.innerHTML = monHtml; divMon.style.display = 'block'; }
+                } else {
+                     let divMon = document.getElementById('monitor-'+id);
+                     if(divMon) { 
+                         divMon.innerHTML = `<span class="gestao-link" onclick="openPeripheralModal(${jsArg(host)})" title="Ferramentas de Gestão"><i class="fa-solid fa-screwdriver-wrench" style="font-size:0.6rem"></i> Ferramentas de Gestão</span>`; 
+                         divMon.style.display = 'block'; 
+                     }
+                }
+
+                const bar = document.getElementById('disk-bar-' + id); 
+                const txt = document.getElementById('disk-txt-' + id); 
+                if(data.error) { txt.innerText = "Erro leitura"; bar.style.width = "100%"; bar.style.backgroundColor = "#94a3b8"; } else { 
+                    txt.innerText = `${data.free_gb}GB / ${data.total_gb}GB`; 
+                    bar.style.width = data.percent + "%"; 
+                    if(data.percent > 90) bar.style.backgroundColor = "var(--danger)"; else bar.style.backgroundColor = "var(--success)"; 
+                } 
+            }).catch(e => {}); 
+        }
+
+        function getRemoteInfo(host, id) {
+            let container = document.getElementById('remote-container-' + id);
+            container.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i>'; 
+
+            fetch('/api/mapear_conexoes', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ hostname: host })
+            })
+            .then(r => r.json())
+            .then(data => {
+                if(data.sucesso) {
+                    let html = '';
+                    if(data.remote_ids.anydesk && data.remote_ids.anydesk !== 'N/D') { html += `<a href="anydesk:${encodeURIComponent(data.remote_ids.anydesk)}" class="remote-link link-anydesk">AnyDesk: ${esc(data.remote_ids.anydesk)}</a>`; }
+                    if(data.remote_ids.teamviewer && data.remote_ids.teamviewer !== 'N/D') { html += `<a href="teamviewer10://${encodeURIComponent(data.remote_ids.teamviewer)}" class="remote-link link-teamviewer">TV: ${esc(data.remote_ids.teamviewer)}</a>`; }
+                    if(data.remote_ids.rustdesk && data.remote_ids.rustdesk !== 'N/D') { html += `<a href="rustdesk://${encodeURIComponent(data.remote_ids.rustdesk)}" class="remote-link link-rustdesk">Rust: ${esc(data.remote_ids.rustdesk)}</a>`; }
+                    if(html === '') { html = '<span style="font-size:0.7rem; color:#94a3b8">Nenhum ID encontrado</span>'; }
+                    container.innerHTML = html;
+                } else { container.innerHTML = '<i class="fa-solid fa-triangle-exclamation" title="'+esc(data.erro)+'" style="color:var(--danger)"></i>'; }
+            })
+            .catch(e => { container.innerHTML = 'Erro'; });
+        }
+
+        function openMonitorSerial(host) {
+            document.getElementById('serial-host-title').innerText = host;
+            document.getElementById('serial-loading').style.display = 'block';
+            document.getElementById('serial-content').style.display = 'none';
+            document.getElementById('serial-output-text').innerText = '';
+            document.getElementById('serialModal').style.display = 'block';
+
+            fetch('/api/mapear_conexoes', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ hostname: host }) })
+            .then(r => r.json())
+            .then(data => {
+                document.getElementById('serial-loading').style.display = 'none';
+                document.getElementById('serial-content').style.display = 'block';
+                if(!data.sucesso) { document.getElementById('serial-output-text').innerText = "ERRO: " + (data.erro||''); return; }
+                const linhas = (data.output||'').split(/\r?\n/).filter(l => l.trim());
+                const seriais = [];
+                linhas.forEach(l => {
+                    const m = l.match(/^MONITOR\s+(.*)\s+\|\s+(.*)$/);
+                    if (m) seriais.push({ modelo: (m[1]||'').trim(), serial: (m[2]||'').trim() });
+                });
+                document.getElementById('serial-output-text').className = 'peripheral-output error';
+                if (seriais.length === 0) { document.getElementById('serial-output-text').innerText = 'Nenhum monitor detectado ou sem acesso.'; return; }
+                document.getElementById('serial-output-text').className = 'peripheral-output';
+                let txt = '';
+                seriais.forEach((s, i) => { txt += (i+1) + '. ' + s.modelo + '\n   Série: ' + s.serial + '\n\n'; });
+                document.getElementById('serial-output-text').innerText = txt.trim();
+            }).catch(err => {
+                document.getElementById('serial-loading').style.display = 'none';
+                document.getElementById('serial-content').style.display = 'block';
+                document.getElementById('serial-output-text').innerText = 'Erro na requisição: ' + err;
+            });
+        }
+
+        function openPeripheralModal(host) {
+            document.getElementById('peri-host-title').innerText = host;
+            document.querySelectorAll('.tool-host-label').forEach(el => el.innerText = host);
+            document.getElementById('peri-loading').style.display = 'block';
+            document.getElementById('peri-content').style.display = 'none';
+            document.getElementById('peri-output-text').innerText = '';
+            document.getElementById('peripheralModal').style.display = 'block';
+            switchPeriTab('peri');
+
+            fetch('/api/mapear_conexoes', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ hostname: host }) })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('peri-loading').style.display = 'none';
+                document.getElementById('peri-content').style.display = 'block';
+                if(data.sucesso) { document.getElementById('peri-output-text').innerText = data.output; } else { document.getElementById('peri-output-text').innerText = "ERRO: " + data.erro; }
+            }).catch(err => {
+                document.getElementById('peri-loading').style.display = 'none'; document.getElementById('peri-content').style.display = 'block'; document.getElementById('peri-output-text').innerText = "Erro na requisição: " + err;
+            });
+        }
+
+        // === FERRAMENTAS DE GESTÃO (importadas do painel sistema / paexec) ===
+        let toolHost = '';
+        function switchPeriTab(tab) {
+            document.getElementById('tab-peri').classList.toggle('active', tab === 'peri');
+            document.getElementById('tab-tools').classList.toggle('active', tab === 'tools');
+            document.getElementById('peri-panel').style.display = (tab === 'peri') ? 'block' : 'none';
+            document.getElementById('tools-panel').style.display = (tab === 'tools') ? 'block' : 'none';
+            if (tab === 'tools') {
+                toolHost = document.getElementById('peri-host-title').innerText.trim();
+                document.querySelectorAll('.tool-host-label').forEach(el => el.innerText = toolHost);
+            }
+        }
+
+        function setToolResult(msg, cls) {
+            const el = document.getElementById('tool-output');
+            el.className = 'tool-result' + (cls ? ' ' + cls : '');
+            el.innerText = msg;
+        }
+
+        // Faz POST e, se a resposta for streaming (text/plain), vai mostrando o texto
+        // em tempo real no elemento; se for JSON, trata como antes.
+        function runToolFetch(el, title, endpoint, body) {
+            const buf = [];
+            return fetch('/api/sistema/' + endpoint, {
+                method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body)
+            }).then(res => {
+                const reader = res.body.getReader();
+                const decoder = new TextDecoder('utf-8');
+                function pump() {
+                    return reader.read().then(({done, value}) => {
+                        if (done) return;
+                        buf.push(decoder.decode(value, {stream: true}));
+                        el.innerText = '=== ' + title + ' ===\n' + buf.join('');
+                        return pump();
+                    });
+                }
+                return pump().then(() => {
+                    const text = buf.join('');
+                    if (!text.trim()) return { sucesso: true, output: '' };
+                    let d; try { d = JSON.parse(text); } catch (e) { d = { sucesso: true, output: text }; }
+                    return d;
+                });
+            });
+        }
+
+        function runTool(name, endpoint, extra, btn) {
+            if (!toolHost) { toolHost = document.getElementById('peri-host-title').innerText.trim(); }
+            if (!toolHost) { setToolResult('Nenhum host disponível.', 'error'); return; }
+            const host = toolHost;
+            const body = Object.assign({ hostname: host }, extra || {});
+            iniciarJob(document.getElementById('tool-output'), name, host, endpoint, body);
+        }
+
+        // Cada execução ganha o próprio bloco de resultado (com a máquina no título),
+        // então várias ferramentas/máquinas podem rodar ao mesmo tempo sem se misturar.
+        function iniciarJob(container, name, host, endpoint, body) {
+            if (!container.dataset.jobs) { container.innerHTML = ''; container.dataset.jobs = '1'; }
+            const cab = document.createElement('div'), saida = document.createElement('div'), box = document.createElement('div');
+            cab.style.cssText = 'color:#38bdf8;font-weight:600'; saida.style.whiteSpace = 'pre-wrap';
+            box.style.cssText = 'border-bottom:1px solid #334155;padding:6px 0;margin-bottom:6px';
+            const titulo = name + ' em ' + host;
+            cab.textContent = titulo + ' — executando...'; saida.style.color = '#f59e0b'; saida.textContent = 'Aguardando resposta...';
+            box.append(cab, saida); container.prepend(box);
+            runToolFetch(saida, titulo, endpoint, body).then(d => {
+                if (d.sucesso) { cab.textContent = titulo + ' — concluído'; saida.style.color = ''; saida.textContent = (d.output || '').trim() || 'Concluído sem saída.'; }
+                else { cab.textContent = titulo + ' — erro'; saida.style.color = '#f87171'; saida.textContent = String(d.output || d.erro || 'Erro desconhecido'); }
+            }).catch(e => { cab.textContent = titulo + ' — erro'; saida.style.color = '#f87171'; saida.textContent = 'Erro na requisição: ' + e.message; });
+        }
+
+        function toolDesinstalarPrograma() {
+            const prog = prompt('Nome do programa a desinstalar em ' + document.getElementById('peri-host-title').innerText + ':');
+            if (!prog || !prog.trim()) return;
+            const btn = document.querySelector('#tools-panel .tool-btn');
+            runTool('desinstalar_programa', 'desinstalar_programa', { programa: prog.trim() });
+        }
+        function toolRemoverImpressora() {
+            const imp = prompt('Nome da impressora a remover em ' + document.getElementById('peri-host-title').innerText + ':');
+            if (!imp || !imp.trim()) return;
+            runTool('remover_impressora', 'remover_impressora', { impressora: imp.trim() });
+        }
+        function toolInstalarImpressora() {
+            const pip = prompt('IP da impressora:');
+            if (!pip || !pip.trim()) return;
+            const nome = prompt('Nome da fila da impressora:');
+            if (!nome || !nome.trim()) return;
+            const fab = confirm('Fabricante EPSON? (OK = EPSON, Cancelar = LEXMARK)') ? 'EPSON' : 'LEXMARK';
+            runTool('instalar_impressora', 'instalar_impressora_ip', { printer_ip: pip.trim(), nome_fila: nome.trim(), fabricante: fab });
+        }
+
+        // === FERRAMENTAS DE GESTÃO — PAINEL ISOLADO (sidebar) ===
+        function showToolsGeral(host) {
+            if (activeController) activeController.abort();
+            activeController = new AbortController();
+            document.querySelectorAll('.unit-container').forEach(d => d.classList.add('hidden'));
+            document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+            document.getElementById('tools-geral-container').classList.remove('hidden');
+            document.getElementById('btn-tools-geral').classList.add('active');
+            document.getElementById('page-title').innerText = "Ferramentas de Gestão";
+            const sel = document.getElementById('tools-host-select');
+            populateToolsHostSelect(sel);
+            if (host) {
+                const inp = document.getElementById('tools-host-input');
+                const match = Array.from(sel.options).find(o => o.value === host || o.value === 'host|' + host);
+                if (match) { sel.value = match.value; inp.value = ''; }
+                else { inp.value = host; sel.value = ''; }
+            }
+            updateTargetStatus();
+            setToolResultGeral('Selecione um computador e uma ação acima.', '');
+        }
+
+        function populateToolsHostSelect(sel, hosts) {
+            sel.innerHTML = '';
+            const placeholder = document.createElement('option');
+            placeholder.value = '';
+            placeholder.text = '— Selecione um computador —';
+            sel.appendChild(placeholder);
+            const list = (hosts || globalHosts).filter(h => h.type === 'PC');
+            const grupos = {};
+            list.forEach(h => { const u = h.unidade || 'Outros'; (grupos[u] = grupos[u] || []).push(h); });
+            const unis = Object.keys(grupos).sort();
+            unis.forEach(unid => {
+                const og = document.createElement('optgroup');
+                og.label = unid;
+                grupos[unid].sort((a, b) => (a.setor || '').localeCompare(b.setor || '') || (a.host || '').localeCompare(b.host || ''));
+                grupos[unid].forEach(h => {
+                    const o = document.createElement('option');
+                    o.value = h.host;
+                    o.dataset.setor = h.setor || '';
+                    o.text = (h.setor ? h.setor + ' — ' : '') + h.host;
+                    og.appendChild(o);
+                });
+                sel.appendChild(og);
+            });
+            enrichHostIps(sel);
+        }
+
+        function enrichHostIps(sel) {
+            const options = Array.from(sel.querySelectorAll('option[value]')).filter(o => o.value);
+            let idx = 0;
+            const CONC = 6;
+            const seen = {};
+            function next() {
+                if (idx >= options.length) return;
+                const batch = [];
+                while (idx < options.length && batch.length < CONC) { batch.push(options[idx]); idx++; }
+                batch.forEach(o => {
+                    const h = o.value;
+                    if (seen[h]) return;
+                    seen[h] = true;
+                    (async () => {
+                        try {
+                            const r = await fetch('/api/check/' + encodeURIComponent(h));
+                            const d = await r.json();
+                            if (d && d.ip && o.isConnected) {
+                                const setor = o.dataset.setor ? o.dataset.setor + ' — ' : '';
+                                o.text = setor + h + ' (' + d.ip + ')';
+                            }
+                        } catch (e) {}
+                    })();
+                });
+                setTimeout(next, 60);
+            }
+            next();
+        }
+
+        function updateTargetStatus() {
+            const h = getToolHostGeral();
+            const st = document.getElementById('tools-host-status');
+            const txt = document.getElementById('tools-host-status-txt');
+            const termHost = document.getElementById('tools-terminal-host');
+            if (termHost) termHost.innerText = h || 'nenhum host';
+            if (!st || !txt) return;
+            const box = st.parentElement;
+            box.classList.remove('online', 'offline');
+            if (!h) { st.innerText = '○'; txt.innerText = 'Nenhum computador selecionado'; return; }
+            st.innerText = '●'; txt.innerText = 'Alvo: ' + h;
+            const guess = globalHosts.find(g => g.host === h);
+            if (guess) {
+                const statusEl = document.getElementById('st-' + guess.id);
+                const online = statusEl && statusEl.classList.contains('st-online');
+                box.classList.add(online ? 'online' : 'offline');
+                txt.innerText = (online ? 'Online' : 'Offline') + ' — ' + h;
+            } else {
+                box.classList.add('online');
+                txt.innerText = 'Alvo: ' + h;
+            }
+        }
+
+        function getToolHostGeral() {
+            const selHost = document.getElementById('tools-host-select').value;
+            const inpHost = document.getElementById('tools-host-input').value.trim();
+            return inpHost || selHost || '';
+        }
+
+        function setToolResultGeral(msg, cls) {
+            const el = document.getElementById('tools-output');
+            el.className = 'tool-result' + (cls ? ' ' + cls : '');
+            el.innerText = msg;
+        }
+
+        function runToolGeral(name, endpoint, extra) {
+            const host = getToolHostGeral();
+            if (!host) { setToolResultGeral('Selecione ou informe um computador primeiro.', 'error'); return; }
+            updateTargetStatus();
+            const body = Object.assign({ hostname: host }, extra || {});
+            iniciarJob(document.getElementById('tools-output'), name, host, endpoint, body);
+        }
+
+        document.addEventListener('change', function(e) {
+            if (e.target && (e.target.id === 'tools-host-select' || e.target.id === 'tools-host-input')) updateTargetStatus();
+        });
+        document.addEventListener('input', function(e) {
+            if (e.target && e.target.id === 'tools-host-input') updateTargetStatus();
+        });
+
+        function toolGeralDesinstalarPrograma() {
+            const h = getToolHostGeral(); if (!h) return setToolResultGeral('Selecione um computador.', 'error');
+            const prog = prompt('Nome do programa a desinstalar em ' + h + ':');
+            if (!prog || !prog.trim()) return;
+            runToolGeral('desinstalar_programa', 'desinstalar_programa', { programa: prog.trim() });
+        }
+        function toolGeralRemoverImpressora() {
+            const h = getToolHostGeral(); if (!h) return setToolResultGeral('Selecione um computador.', 'error');
+            const imp = prompt('Nome da impressora a remover em ' + h + ':');
+            if (!imp || !imp.trim()) return;
+            runToolGeral('remover_impressora', 'remover_impressora', { impressora: imp.trim() });
+        }
+        function toolGeralInstalarImpressora() {
+            const h = getToolHostGeral(); if (!h) return setToolResultGeral('Selecione um computador.', 'error');
+            const pip = prompt('IP da impressora:');
+            if (!pip || !pip.trim()) return;
+            const nome = prompt('Nome da fila da impressora:');
+            if (!nome || !nome.trim()) return;
+            const fab = confirm('Fabricante EPSON? (OK = EPSON, Cancelar = LEXMARK)') ? 'EPSON' : 'LEXMARK';
+            runToolGeral('instalar_impressora', 'instalar_impressora_ip', { printer_ip: pip.trim(), nome_fila: nome.trim(), fabricante: fab });
+        }
+
+        // === LÓGICA DO SCANNER DE REDE ===
+        function openScannerModal() {
+            document.getElementById('scannerModal').style.display = 'block';
+            document.getElementById('scanResults').style.display = 'none';
+            document.getElementById('scannerTableBody').innerHTML = '';
+        }
+
+        function startNetworkScan() {
+            const range = document.getElementById('scannerIpRange').value;
+            const btn = document.querySelector('#scannerModal .btn-primary');
+            btn.disabled = true; 
+            document.getElementById('scanLoading').style.display = 'block';
+            document.getElementById('scanResults').style.display = 'none';
+            document.getElementById('scannerTableBody').innerHTML = '';
+
+            fetch('/api/scanner/scan', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ ip_range: range })
+            })
+            .then(r => r.json())
+            .then(data => {
+                btn.disabled = false;
+                document.getElementById('scanLoading').style.display = 'none';
+                document.getElementById('scanResults').style.display = 'block';
+                renderScannerTable(data);
+            })
+            .catch(e => {
+                alert("Erro no scan: " + e);
+                btn.disabled = false;
+                document.getElementById('scanLoading').style.display = 'none';
+            });
+        }
+
+        function renderScannerTable(data) {
+            const tbody = document.getElementById('scannerTableBody');
+            if (data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:20px;">Nenhum dispositivo encontrado no range.</td></tr>';
+                return;
+            }
+
+            data.forEach((item, index) => {
+                let row = document.createElement('tr');
+                row.className = 'scanner-row';
+                
+                // Status e Checkbox
+                let checkCell = '';
+                let statusBadge = '';
+                
+                if (item.registered) {
+                    checkCell = '<input type="checkbox" disabled>';
+                    statusBadge = `<span class="badge badge-registered" title="${item.location}">JÁ CADASTRADO</span><div style="font-size:0.65rem; color:#10b981; margin-top:2px;">${item.location}</div>`;
+                } else {
+                    checkCell = `<input type="checkbox" class="scan-check" data-idx="${index}">`;
+                    statusBadge = '<span class="badge" style="background:rgba(59, 130, 246, 0.2); color:#3b82f6; border:1px solid #3b82f6;">NOVO</span>';
+                }
+
+                // Ícone
+                let icon = item.type === 'Impressora' ? '<i class="fa-solid fa-print"></i>' : '<i class="fa-solid fa-desktop"></i>';
+                
+                // Detalhes
+                let detailsHtml = '';
+                if(item.type === 'Computador') {
+                    detailsHtml = `<b>${esc(item.details.modelo || 'Genérico')}</b><br><small style="color:#94a3b8">${esc(item.details.user || '')}</small>`;
+                } else {
+                    detailsHtml = `<b>${esc(item.details.modelo || 'Genérica')}</b> ${item.details.brand ? '<span class="badge" style="background:#444">'+esc(item.details.brand)+'</span>' : ''}`;
+                }
+
+                row.innerHTML = `
+                    <td style="text-align:center;">${checkCell}</td>
+                    <td>${statusBadge}</td>
+                    <td>${icon} ${esc(item.type)}</td>
+                    <td>
+                        <div style="font-weight:bold; color:white;">${esc(item.ip)}</div>
+                        <div style="font-size:0.8rem; color:#94a3b8;">${esc(item.hostname)}</div>
+                    </td>
+                    <td>${detailsHtml}</td>
+                    <td><input type="text" class="form-control scan-sector-input" placeholder="Setor (Ex: TI)" style="padding:5px; height:30px; font-size:0.8rem;"></td>
+                `;
+                tbody.appendChild(row);
+                // Salva dados no elemento para recuperar depois
+                row.dataset.item = JSON.stringify(item);
+            });
+        }
+
+        function toggleAllScanner(source) {
+            document.querySelectorAll('.scan-check').forEach(c => c.checked = source.checked);
+        }
+
+        function importSelectedScanner() {
+            const unit = document.getElementById('scannerTargetUnit').value;
+            const rows = document.querySelectorAll('.scanner-row');
+            let itemsToImport = [];
+
+            rows.forEach(row => {
+                const checkbox = row.querySelector('.scan-check');
+                if (checkbox && checkbox.checked) {
+                    const itemData = JSON.parse(row.dataset.item);
+                    const sectorInput = row.querySelector('.scan-sector-input').value || 'Geral';
+                    
+                    itemsToImport.push({
+                        ip: itemData.ip,
+                        hostname: itemData.hostname,
+                        type: itemData.type,
+                        sector: sectorInput
+                    });
+                }
+            });
+
+            if (itemsToImport.length === 0) return alert("Selecione pelo menos um item novo para importar.");
+
+            if(confirm(`Deseja importar ${itemsToImport.length} dispositivos para a unidade "${unit}"?`)) {
+                fetch('/api/scanner/importar', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ unit: unit, items: itemsToImport })
+                })
+                .then(r => r.json())
+                .then(d => {
+                    if(d.ok) {
+                        alert("Importação realizada com sucesso!");
+                        window.location.reload();
+                    } else {
+                        alert("Erro ao importar: " + d.msg);
+                    }
+                });
+            }
+        }
+
+        function filterTable() { const input = document.getElementById('tableSearch'); const filter = input.value.toUpperCase(); const activeUnit = document.querySelector('.unit-container:not(.hidden)'); if(!activeUnit) return; const rows = activeUnit.querySelectorAll('.searchable-row'); rows.forEach(row => { const text = row.innerText.toUpperCase(); row.style.display = text.indexOf(filter) > -1 ? "" : "none"; }); }
+        function powerAction(host, action) { if(confirm(`Confirmar ação: ${action.toUpperCase()} em ${host}?`)) { fetch('/api/power', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({host: host, action: action}) }).then(r => r.json()).then(d => alert(d.msg)); } }
+        function sendMessage(host) { const mensagem = prompt(`Digite a mensagem para ${host}:`); if(mensagem === null || mensagem.trim() === '') return; fetch('/api/message', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({host: host, message: mensagem}) }).then(r => r.json()).then(d => alert(d.msg)).catch(e => alert('Erro: ' + e.message)); }
+        function deleteItem(unit, floor, sector, host) { if(confirm("Tem certeza que deseja EXCLUIR este dispositivo?\n\n" + sector + " - " + host)) { fetch('/api/delete_item', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({unit: unit, floor: floor, sector: sector, host: host}) }).then(r => r.json()).then(d => { if(d.ok) window.location.reload(); else alert("Erro ao excluir: " + d.msg); }); } }
+        function editItem(unit, currentFloor, sector, host, floorsList) { document.getElementById('editUnit').value = unit; document.getElementById('editOldFloor').value = currentFloor; document.getElementById('editOldSector').value = sector; document.getElementById('editOldHost').value = host; document.getElementById('editSectorInput').value = sector; document.getElementById('editHostInput').value = host; const floorSelect = document.getElementById('editFloorSelector'); floorSelect.innerHTML = ''; floorsList.forEach(f => { let opt = document.createElement('option'); opt.value = f; opt.innerText = f; if(f === currentFloor) opt.selected = true; floorSelect.appendChild(opt); }); document.getElementById('editModal').style.display = 'block'; }
+        function submitEdit() { const data = { unit: document.getElementById('editUnit').value, old_floor: document.getElementById('editOldFloor').value, new_floor: document.getElementById('editFloorSelector').value, old_sector: document.getElementById('editOldSector').value, old_host: document.getElementById('editOldHost').value, new_sector: document.getElementById('editSectorInput').value, new_host: document.getElementById('editHostInput').value }; fetch('/api/editar_item', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(data) }).then(r => r.json()).then(d => { if(d.ok) window.location.reload(); else alert("Erro ao editar: " + d.msg); }); }
+        function openBuilder() { document.getElementById('unitName').value = ''; document.getElementById('floorsContainer').innerHTML = ''; addFloor(); document.getElementById('builderModal').style.display = 'block'; }
+        function addFloor() { const id = Date.now(); const div = document.createElement('div'); div.className = 'builder-floor'; div.id = 'floor-' + id; div.innerHTML = `<div class="floor-header"><input type="text" class="floor-input floor-name" placeholder="Nome do Andar (Ex: 1º Andar)"><button class="btn-del-floor" onclick="document.getElementById('floor-${id}').remove()" title="Remover Andar">&times;</button></div><div class="builder-cols"><div class="builder-col"><label class="col-title"><i class="fa-solid fa-desktop"></i> Computadores / Painéis</label><textarea class="col-textarea area-pc" placeholder="Cole aqui a lista:\nRecepção PC-01\nTriagem PC-02"></textarea></div><div class="builder-col"><label class="col-title"><i class="fa-solid fa-print"></i> Impressoras</label><textarea class="col-textarea area-imp" placeholder="Cole aqui a lista:\nRecepção 192.168.0.50\nTriagem 10.0.0.9"></textarea></div></div>`; document.getElementById('floorsContainer').appendChild(div); }
+        function submitBuilder() { const nome = document.getElementById('unitName').value; if(!nome) return alert("Digite o nome da unidade!"); const floorsData = []; const floors = document.querySelectorAll('.builder-floor'); if(floors.length === 0) return alert("Adicione pelo menos um andar."); floors.forEach(floor => { const floorName = floor.querySelector('.floor-name').value || "Andar Principal"; const txtPc = floor.querySelector('.area-pc').value; const txtImp = floor.querySelector('.area-imp').value; floorsData.push({ name: floorName, pcs: txtPc, imps: txtImp }); }); fetch('/api/criar_solicitacao', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({nome: nome, floors: floorsData}) }).then(r=>r.json()).then(d=>{ if(d.ok) { alert("Solicitação enviada! Aguardando Aprovação."); window.location.reload(); } else alert("Erro ao criar."); }); }
+        function toggleTheme() { const body = document.body; const current = body.getAttribute('data-theme'); const newTheme = current === 'dark' ? 'light' : 'dark'; body.setAttribute('data-theme', newTheme); localStorage.setItem('theme', newTheme); const icon = document.getElementById('theme-icon'); if(newTheme === 'dark') { icon.classList.remove('fa-moon'); icon.classList.add('fa-sun'); } else { icon.classList.remove('fa-sun'); icon.classList.add('fa-moon'); } }
+        const savedTheme = localStorage.getItem('theme') || 'light'; document.body.setAttribute('data-theme', savedTheme); if(savedTheme === 'dark') { document.getElementById('theme-icon').classList.remove('fa-moon'); document.getElementById('theme-icon').classList.add('fa-sun'); }
+        function openAddModal(unitName) { document.getElementById('addUnit').value = unitName; const container = document.getElementById('unit-' + unitName); const floors = []; container.querySelectorAll('.card-title').forEach(el => { floors.push(el.innerText); }); const sel = document.getElementById('addFloorSelector'); sel.innerHTML = ''; floors.forEach(f => { let opt = document.createElement('option'); opt.value = f; opt.innerText = f; sel.appendChild(opt); }); document.getElementById('addModal').style.display = 'block'; }
+        function submitAdd() { const data = { unit: document.getElementById('addUnit').value, floor: document.getElementById('addFloorSelector').value, sector: document.getElementById('addSectorInput').value, host: document.getElementById('addHostInput').value, type: document.getElementById('addTypeSelector').value }; if(!data.sector || !data.host) return alert("Preencha todos os campos"); fetch('/api/adicionar_item', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(data) }).then(r => r.json()).then(d => { if(d.ok) window.location.reload(); else alert("Erro ao adicionar: " + d.msg); }); }
+        function openAddFloorModal(unitName) { document.getElementById('addFloorUnit').value = unitName; document.getElementById('newFloorName').value = ''; const sel = document.getElementById('floorPositionSelector'); sel.innerHTML = ''; let optStart = document.createElement('option'); optStart.value = "START"; optStart.innerText = "No Início da Lista (Primeiro)"; sel.appendChild(optStart); const container = document.getElementById('unit-' + unitName); if(container) { const titles = container.querySelectorAll('.card-title'); titles.forEach(el => { let floorName = el.innerText; let opt = document.createElement('option'); opt.value = floorName; opt.innerText = `Após o andar: ${floorName}`; sel.appendChild(opt); }); } let optEnd = document.createElement('option'); optEnd.value = "END"; optEnd.innerText = "No Final da Lista (Último)"; optEnd.selected = true; sel.appendChild(optEnd); document.getElementById('addFloorModal').style.display = 'block'; setTimeout(() => document.getElementById('newFloorName').focus(), 100); }
+        function submitAddFloor() { const unit = document.getElementById('addFloorUnit').value; const floorName = document.getElementById('newFloorName').value; const position = document.getElementById('floorPositionSelector').value; if (!floorName.trim()) return alert("Digite o nome do andar."); fetch('/api/adicionar_andar_existente', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ unit: unit, floor_name: floorName, position_ref: position }) }).then(r => r.json()).then(d => { if(d.ok) { alert("Andar criado com sucesso!"); window.location.reload(); } else { alert("Erro ao criar andar: " + d.msg); } }).catch(e => alert("Erro de conexão: " + e)); }
+
+        // ===================== VNC MONITOR =====================
+        function openVncModal() {
+            document.getElementById('vncModal').style.display = 'block';
+            document.getElementById('vncResults').style.display = 'none';
+            document.getElementById('vncIpsInput').value = '';
+            document.getElementById('vncPort').value = '5900';
+        }
+
+        function runVncCheck() {
+            const ips = document.getElementById('vncIpsInput').value.trim();
+            const port = parseInt(document.getElementById('vncPort').value) || 5900;
+            if (!ips) return alert('Cole ao menos um IP para verificar.');
+            const btn = document.getElementById('btnVncCheck');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Verificando...';
+            document.getElementById('vncResults').style.display = 'none';
+            fetch('/api/vnc/check', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ ips: ips, port: port })
+            })
+            .then(r => r.json())
+            .then(data => {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fa-solid fa-play"></i> VERIFICAR';
+                if (data.error) return alert(data.error);
+                const tbody = document.getElementById('vncTableBody');
+                tbody.innerHTML = '';
+                data.results.forEach(r => {
+                    const tr = document.createElement('tr');
+                    let dotClass = r.status === 'online' ? 'st-online' : r.status === 'offline' ? 'st-offline' : 'st-loading';
+                    let label = r.status === 'online' ? 'Online' : r.status === 'offline' ? 'Offline' : 'Inválido';
+                    let latency = r.latency_ms !== null ? `<span style="color:var(--success);font-size:0.75rem">${r.latency_ms} ms</span>` : `<span style="color:var(--text-muted);font-size:0.75rem">—</span>`;
+                    tr.innerHTML = `
+                        <td class="mono">${esc(r.ip)}</td>
+                        <td><div class="status-pill ${dotClass}"><span class="dot"></span> ${label}</div></td>
+                        <td>${latency}</td>
+                        <td style="font-size:0.75rem;color:var(--text-muted)">${esc(r.message)}</td>
+                        <td style="font-size:0.75rem;color:var(--text-muted)">${esc(r.checked_at)}</td>`;
+                    tbody.appendChild(tr);
+                });
+                document.getElementById('vnc-sum-total').innerText = data.summary.total;
+                document.getElementById('vnc-sum-online').innerText = data.summary.online;
+                document.getElementById('vnc-sum-offline').innerText = data.summary.offline;
+                document.getElementById('vncResults').style.display = 'block';
+            })
+            .catch(() => {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fa-solid fa-play"></i> VERIFICAR';
+                alert('Erro de conexão com o servidor.');
+            });
+        }
+    </script>
+
+    <!-- MODAL VNC MONITOR -->
+    <div id="vncModal" class="modal">
+        <div class="modal-content" style="width:850px; max-width:95%;">
+            <div class="modal-header">
+                <span><i class="fa-solid fa-display" style="color:#a78bfa"></i> VNC Monitor — Painéis de Senha</span>
+                <span onclick="document.getElementById('vncModal').style.display='none'" style="cursor:pointer">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div style="display:flex; gap:15px; align-items:flex-end; flex-wrap:wrap; margin-bottom:10px;">
+                    <div class="form-group" style="flex:3; margin-bottom:0;">
+                        <label>IPs dos Painéis <span style="font-size:0.75rem; color:var(--text-muted)">(um por linha, vírgula ou ponto-e-vírgula — máx. 50)</span></label>
+                        <textarea id="vncIpsInput" rows="5" style="width:100%; padding:10px; border-radius:6px; border:1px solid var(--border); background:var(--bg-body); color:var(--text-main); font-family:monospace; font-size:0.85rem; resize:vertical;" placeholder="10.0.0.10&#10;10.0.0.11&#10;10.0.0.12" onkeydown="if(event.ctrlKey&&event.key==='Enter')runVncCheck()"></textarea>
+                    </div>
+                    <div style="display:flex; flex-direction:column; gap:10px; min-width:120px;">
+                        <div class="form-group" style="margin-bottom:0;">
+                            <label>Porta VNC</label>
+                            <input type="number" id="vncPort" value="5900" style="width:100%; padding:10px; border-radius:6px; border:1px solid var(--border); background:var(--bg-body); color:var(--text-main);">
+                        </div>
+                        <button id="btnVncCheck" class="btn-primary" style="width:100%; padding:10px; display:flex; align-items:center; justify-content:center; gap:8px; font-weight:700;" onclick="runVncCheck()">
+                            <i class="fa-solid fa-play"></i> VERIFICAR
+                        </button>
+                    </div>
+                </div>
+                <p style="font-size:0.72rem; color:var(--text-muted); margin:0 0 15px 0;"><kbd style="background:var(--border); padding:2px 6px; border-radius:3px; font-size:0.7rem;">Ctrl+Enter</kbd> para verificar rapidamente</p>
+
+                <div id="vncResults" style="display:none;">
+                    <div class="stats-grid" style="margin-bottom:15px;">
+                        <div class="stat-card border-left-blue" style="padding:10px;">
+                            <div class="stat-title">Total</div>
+                            <div class="stat-value" id="vnc-sum-total">0</div>
+                        </div>
+                        <div class="stat-card border-left-green" style="padding:10px;">
+                            <div class="stat-title">Online</div>
+                            <div class="stat-value" id="vnc-sum-online" style="color:var(--success)">0</div>
+                        </div>
+                        <div class="stat-card border-left-red" style="padding:10px;">
+                            <div class="stat-title">Offline</div>
+                            <div class="stat-value" id="vnc-sum-offline" style="color:var(--danger)">0</div>
+                        </div>
+                    </div>
+                    <div class="card" style="margin-bottom:0;">
+                        <div class="card-header">
+                            <div class="card-title"><i class="fa-solid fa-table-list"></i> Resultado da Verificação</div>
+                        </div>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>IP</th>
+                                    <th width="110">Status</th>
+                                    <th width="90">Latência</th>
+                                    <th>Mensagem</th>
+                                    <th width="80">Verificado</th>
+                                </tr>
+                            </thead>
+                            <tbody id="vncTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-primary" onclick="document.getElementById('vncModal').style.display='none'">Fechar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: ADICIONAR/EDITAR PAINEL -->
+    <div id="painelAddModal" class="modal">
+        <div class="modal-content" style="width:420px; margin-top:10%;">
+            <div class="modal-header">
+                <span id="painel-modal-title"><i class="fa-solid fa-plus"></i> Adicionar Painel</span>
+                <span onclick="document.getElementById('painelAddModal').style.display='none'" style="cursor:pointer">&times;</span>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="painelEditOldIp">
+                <div class="form-group"><label>Unidade</label><input type="text" id="painelInputUnidade" placeholder="Ex: HSM São Bernardo"></div>
+                <div class="form-group"><label>Setor</label><input type="text" id="painelInputSetor" placeholder="Ex: Recepção"></div>
+                <div class="form-group"><label>IP</label><input type="text" id="painelInputIp" placeholder="Ex: 10.0.0.212"></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-primary" onclick="submitPainel()"><i class="fa-solid fa-check"></i> Salvar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: COMANDO CUSTOMIZADO (MUDAR URL) -->
+    <div id="painelCustomCmdModal" class="modal">
+        <div class="modal-content" style="width:500px; margin-top:10%;">
+            <div class="modal-header">
+                <span><i class="fa-solid fa-link"></i> <span id="custom-cmd-title">Comando</span></span>
+                <span onclick="document.getElementById('painelCustomCmdModal').style.display='none'" style="cursor:pointer">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label id="custom-cmd-label">Parametro:</label>
+                    <input type="text" id="customCmdParam" style="width:100%; padding:10px; border-radius:6px; border:1px solid var(--border); background:var(--bg-body); color:var(--text-main); font-family:monospace">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-primary" onclick="submitCustomCmd()"><i class="fa-solid fa-play"></i> Executar</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // =====================================================================
+        // PAINÉIS TV - JAVASCRIPT
+        // =====================================================================
+        let paineisData = [];
+        let painelStatusCache = {};
+        let painelSelectedIp = null;
+        let pendingCustomCmd = null;
+
+        const COMANDOS_INFO = {{ comandos_painel | tojson }};
+
+        function showPaineis() {
+            if (activeController) activeController.abort();
+            activeController = new AbortController();
+            document.querySelectorAll('.unit-container').forEach(d => d.classList.add('hidden'));
+            document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+            document.getElementById('paineis-container').classList.remove('hidden');
+            document.getElementById('btn-paineis-tv').classList.add('active');
+            document.getElementById('page-title').innerText = 'Paineis TV — Gerenciamento Remoto';
+            renderCmdPalette();
+            loadPaineis();
+        }
+
+        function renderCmdPalette() {
+            const container = document.getElementById('cmdPalette');
+            container.innerHTML = '';
+            for (const [id, cmd] of Object.entries(COMANDOS_INFO)) {
+                const btn = document.createElement('button');
+                btn.className = 'nav-item';
+                btn.style.cssText = `border:1px solid var(--border); border-radius:6px; padding:10px; font-size:0.8rem; gap:8px; text-align:left; white-space:nowrap;`;
+                btn.innerHTML = `<i class="${cmd.icone}" style="color:${cmd.cor}; width:18px; text-align:center"></i> ${cmd.nome}`;
+                btn.onclick = () => executarComandoPainel(id);
+                container.appendChild(btn);
+            }
+        }
+
+        function loadPaineis() {
+            fetch('/api/paineis').then(r => r.json()).then(data => {
+                paineisData = data;
+                renderPaineisTable();
+                if (data.length > 0) checkAllPaineis();
+            });
+        }
+
+        function renderPaineisTable() {
+            const tbody = document.getElementById('painelTableBody');
+            const search = (document.getElementById('painelSearch')?.value || '').toUpperCase();
+            const filtered = paineisData.filter(p => {
+                const txt = `${p.unidade} ${p.setor} ${p.ip}`.toUpperCase();
+                return txt.indexOf(search) > -1;
+            });
+
+            document.getElementById('painel-total').innerText = paineisData.length;
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:30px; color:var(--text-muted)"><i class="fa-solid fa-tv" style="font-size:2rem; display:block; margin-bottom:10px; opacity:0.3"></i>Nenhum painel cadastrado.<br>Clique em "Adicionar Painel" para comecar.</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = '';
+            filtered.forEach(p => {
+                const st = painelStatusCache[p.ip];
+                let statusHtml = '', navHtml = '-', audioHtml = '-';
+                let statusClass = 'st-loading';
+                let statusText = 'Verificando...';
+
+                if (st) {
+                    statusClass = st.online ? 'st-online' : 'st-offline';
+                    statusText = st.online ? 'ONLINE' : 'OFFLINE';
+                    if (st.details) {
+                        navHtml = `<span style="color:${st.details.navegador === 'PARADO' ? 'var(--danger)' : 'var(--success)'}; font-weight:600">${esc(st.details.navegador)}</span>`;
+                        audioHtml = `<span style="font-size:0.75rem">${esc(st.details.audio_sink)}</span>`;
+                    }
+                }
+
+                statusHtml = `<div class="status-pill ${statusClass}"><span class="dot"></span> ${statusText}</div>`;
+
+                const isSelected = painelSelectedIp === p.ip;
+                const rowStyle = isSelected ? 'background:rgba(59,130,246,0.08);' : '';
+
+                tbody.innerHTML += `
+                    <tr class="searchable-row painel-row" style="${rowStyle}" onclick="selectPainel(${jsArg(p.ip)})">
+                        <td>${statusHtml}</td>
+                        <td><strong>${esc(p.unidade)}</strong></td>
+                        <td>${esc(p.setor)}</td>
+                        <td class="mono" style="color:var(--info); font-weight:600">${esc(p.ip)}</td>
+                        <td>${navHtml}</td>
+                        <td>${audioHtml}</td>
+                        <td>
+                            <div class="actions" style="justify-content:center">
+                                <button class="btn-mini edit" onclick="event.stopPropagation(); editPainel(${jsArg(p.ip)})" title="Editar"><i class="fa-solid fa-pen"></i></button>
+                                <button class="btn-mini danger" onclick="event.stopPropagation(); deletePainel(${jsArg(p.ip)})" title="Excluir"><i class="fa-solid fa-trash"></i></button>
+                                <button class="btn-mini" onclick="event.stopPropagation(); execQuickCmd(${jsArg(p.ip)}, 'reiniciar_navegador')" title="Reiniciar Navegador" style="color:var(--info)"><i class="fa-solid fa-rotate-right"></i></button>
+                                <button class="btn-mini" onclick="event.stopPropagation(); execQuickCmd(${jsArg(p.ip)}, 'status')" title="Status Geral" style="color:var(--success)"><i class="fa-solid fa-heart-pulse"></i></button>
+                            </div>
+                        </td>
+                    </tr>`;
+            });
+
+            let on = 0, off = 0;
+            paineisData.forEach(p => {
+                const st = painelStatusCache[p.ip];
+                if (st && st.online) on++; else off++;
+            });
+            document.getElementById('painel-online').innerText = on;
+            document.getElementById('painel-offline').innerText = off;
+            updateDisplayPainel();
+        }
+
+        function updateDisplayPainel() {
+            const total = paineisData.length;
+            let on = 0;
+            paineisData.forEach(p => { const st = painelStatusCache[p.ip]; if (st && st.online) on++; });
+            const off = total - on;
+            document.getElementById('dash-total-painel').innerText = total;
+            document.getElementById('dash-online-painel').innerText = on;
+            document.getElementById('dash-offline-painel').innerText = off;
+        }
+
+        function loadPaineisDashboard(signal) {
+            fetch('/api/paineis', { signal: signal }).then(r => r.json()).then(data => {
+                paineisData = data;
+                updateDisplayPainel();
+                const pollStatus = () => {
+                    if (signal.aborted) return;
+                    if (paineisData.length > 0) {
+                        fetch('/api/paineis/status', { method: 'POST', headers: {'Content-Type':'application/json'}, body: '{}', signal: signal })
+                        .then(r => r.json()).then(function(d) { painelStatusCache = d; updateDisplayPainel(); }).catch(function() {});
+                    }
+                    setTimeout(pollStatus, 10000);
+                };
+                pollStatus();
+            }).catch(function() {});
+        }
+
+        function filterPaineis() { renderPaineisTable(); }
+
+        function selectPainel(ip) {
+            painelSelectedIp = ip;
+            const p = paineisData.find(x => x.ip === ip);
+            document.getElementById('painel-selected-label').innerHTML = `<span style="color:var(--info)">${esc(ip)}</span> — ${p ? esc(p.unidade + ' / ' + p.setor) : ''}`;
+            renderPaineisTable();
+        }
+
+        function checkAllPaineis() {
+            const btn = document.getElementById('btn-check-all-paineis');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Verificando...';
+            
+            fetch('/api/paineis/status', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({}) })
+            .then(r => r.json())
+            .then(data => {
+                painelStatusCache = data;
+                renderPaineisTable();
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fa-solid fa-rotate"></i> Verificar Todos';
+            })
+            .catch(() => {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fa-solid fa-rotate"></i> Verificar Todos';
+            });
+        }
+
+        function executarComandoPainel(cmdId) {
+            if (!painelSelectedIp) return alert('Selecione um painel na tabela primeiro!');
+            
+            const cmd = COMANDOS_INFO[cmdId];
+            if (cmd && cmd.eh_custom) {
+                pendingCustomCmd = { cmdId: cmdId, ip: painelSelectedIp };
+                document.getElementById('custom-cmd-title').innerText = cmd.nome;
+                document.getElementById('custom-cmd-label').innerText = cmd.prompt || 'Parametro:';
+                document.getElementById('customCmdParam').value = '';
+                document.getElementById('painelCustomCmdModal').style.display = 'block';
+                setTimeout(() => document.getElementById('customCmdParam').focus(), 100);
+                return;
+            }
+
+            if (!confirm(`Executar "${cmd?.nome || cmdId}" em ${painelSelectedIp}?`)) return;
+            
+            addTerminalLine(`$ ${cmd?.nome || cmdId}`, '#f59e0b');
+            addTerminalLine(`Executando em ${painelSelectedIp}...`, '#64748b');
+
+            fetch('/api/paineis/executar', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ ip: painelSelectedIp, cmd_id: cmdId })
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.ok) {
+                    if (data.output) addTerminalLine(data.output, '#38a169');
+                    if (data.erro && data.erro.trim()) addTerminalLine('[STDERR] ' + data.erro, '#ef4444');
+                    addTerminalLine(`✔ Comando executado (exit: ${data.exit_code})`, '#10b981');
+                } else {
+                    addTerminalLine(`✘ ERRO: ${data.erro}`, '#ef4444');
+                }
+                addTerminalLine('─'.repeat(50), '#334155');
+                scrollTerminal();
+                if (['reiniciar_painel', 'reiniciar_navegador', 'ativar_kiosk', 'desativar_kiosk', 'ativar_painel_sh', 'desativar_painel_sh'].includes(cmdId)) {
+                    setTimeout(checkAllPaineis, 8000);
+                }
+            })
+            .catch(e => {
+                addTerminalLine(`✘ Erro de conexão: ${e}`, '#ef4444');
+                scrollTerminal();
+            });
+        }
+
+        function submitCustomCmd() {
+            if (!pendingCustomCmd) return;
+            const param = document.getElementById('customCmdParam').value.trim();
+            if (!param) return alert('Preencha o campo!');
+            document.getElementById('painelCustomCmdModal').style.display = 'none';
+            
+            const cmd = COMANDOS_INFO[pendingCustomCmd.cmdId];
+            addTerminalLine(`$ ${cmd.nome}: ${param}`, '#f59e0b');
+            addTerminalLine(`Executando em ${pendingCustomCmd.ip}...`, '#64748b');
+
+            fetch('/api/paineis/executar', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ ip: pendingCustomCmd.ip, cmd_id: pendingCustomCmd.cmdId, param: param })
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.ok) {
+                    if (data.output) addTerminalLine(data.output, '#38a169');
+                    addTerminalLine(`✔ OK (exit: ${data.exit_code})`, '#10b981');
+                } else {
+                    addTerminalLine(`✘ ERRO: ${data.erro}`, '#ef4444');
+                }
+                addTerminalLine('─'.repeat(50), '#334155');
+                scrollTerminal();
+                pendingCustomCmd = null;
+            })
+            .catch(e => {
+                addTerminalLine(`✘ Erro: ${e}`, '#ef4444');
+                scrollTerminal();
+                pendingCustomCmd = null;
+            });
+        }
+
+        function execQuickCmd(ip, cmdId) {
+            const cmd = COMANDOS_INFO[cmdId];
+            addTerminalLine(`$ [RAPIDO] ${cmd?.nome || cmdId} @ ${ip}`, '#f59e0b');
+            
+            fetch('/api/paineis/executar', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ ip: ip, cmd_id: cmdId })
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.ok) {
+                    if (data.output) addTerminalLine(data.output, '#38a169');
+                    addTerminalLine(`✔ OK`, '#10b981');
+                } else {
+                    addTerminalLine(`✘ ${data.erro}`, '#ef4444');
+                }
+                addTerminalLine('─'.repeat(50), '#334155');
+                scrollTerminal();
+            })
+            .catch(e => { addTerminalLine(`✘ ${e}`, '#ef4444'); scrollTerminal(); });
+        }
+
+        function execTerminalCmd() {
+            const input = document.getElementById('terminalInput');
+            const cmd = input.value.trim();
+            if (!cmd) return;
+            if (!painelSelectedIp) return alert('Selecione um painel na tabela!');
+            
+            addTerminalLine(`$ ${cmd}`, '#e2e8f0');
+            input.value = '';
+
+            fetch('/api/paineis/executar', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ ip: painelSelectedIp, cmd_id: 'custom', custom_cmd: cmd })
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.ok) {
+                    if (data.output) addTerminalLine(data.output, '#38a169');
+                    if (data.erro && data.erro.trim()) addTerminalLine('[ERR] ' + data.erro, '#f59e0b');
+                } else {
+                    addTerminalLine(`✘ ${data.erro}`, '#ef4444');
+                }
+                addTerminalLine('─'.repeat(50), '#334155');
+                scrollTerminal();
+            })
+            .catch(e => { addTerminalLine(`✘ ${e}`, '#ef4444'); scrollTerminal(); });
+        }
+
+        function addTerminalLine(text, color) {
+            const term = document.getElementById('terminalOutput');
+            const div = document.createElement('div');
+            div.style.color = color || '#38a169';
+            div.style.whiteSpace = 'pre-wrap';
+            div.style.wordBreak = 'break-all';
+            div.style.marginBottom = '2px';
+            div.innerText = text;
+            term.appendChild(div);
+        }
+
+        function scrollTerminal() {
+            const term = document.getElementById('terminalOutput');
+            term.scrollTop = term.scrollHeight;
+        }
+
+        function limparTerminal() {
+            document.getElementById('terminalOutput').innerHTML = '<div style="color:#64748b">Terminal limpo.</div>';
+        }
+
+        // CRUD Painéis
+        function openAddPainelModal() {
+            document.getElementById('painel-modal-title').innerHTML = '<i class="fa-solid fa-plus"></i> Adicionar Painel';
+            document.getElementById('painelEditOldIp').value = '';
+            document.getElementById('painelInputUnidade').value = '';
+            document.getElementById('painelInputSetor').value = '';
+            document.getElementById('painelInputIp').value = '';
+            document.getElementById('painelAddModal').style.display = 'block';
+        }
+
+        function editPainel(ip) {
+            const p = paineisData.find(x => x.ip === ip);
+            if (!p) return;
+            document.getElementById('painel-modal-title').innerHTML = '<i class="fa-solid fa-pen"></i> Editar Painel';
+            document.getElementById('painelEditOldIp').value = ip;
+            document.getElementById('painelInputUnidade').value = p.unidade;
+            document.getElementById('painelInputSetor').value = p.setor;
+            document.getElementById('painelInputIp').value = p.ip;
+            document.getElementById('painelAddModal').style.display = 'block';
+        }
+
+        function submitPainel() {
+            const oldIp = document.getElementById('painelEditOldIp').value;
+            const data = {
+                unidade: document.getElementById('painelInputUnidade').value.trim(),
+                setor: document.getElementById('painelInputSetor').value.trim(),
+                ip: document.getElementById('painelInputIp').value.trim()
+            };
+            if (!data.ip) return alert('IP obrigatório!');
+
+            const url = oldIp ? '/api/paineis/editar' : '/api/paineis/adicionar';
+            if (oldIp) data.old_ip = oldIp;
+
+            fetch(url, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(data) })
+            .then(r => r.json())
+            .then(d => {
+                if (d.ok) { document.getElementById('painelAddModal').style.display = 'none'; loadPaineis(); }
+                else alert('Erro: ' + (d.erro || d.msg));
+            });
+        }
+
+        function deletePainel(ip) {
+            if (!confirm(`Excluir o painel ${ip}?`)) return;
+            fetch('/api/paineis/excluir', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ ip: ip }) })
+            .then(r => r.json())
+            .then(d => { if (d.ok) loadPaineis(); else alert('Erro: ' + d.erro); });
+        }
+    </script>
+
+<script>
+    // ===================== ANOTAÇÕES E HISTÓRICO =====================
+    let _notaEid = null;
+    async function openNotas(eid, host) {
+        _notaEid = eid;
+        document.getElementById('notas-host').innerText = host;
+        document.getElementById('notas-texto').value = '';
+        document.getElementById('notasModal').style.display = 'block';
+        carregarHistorico(host);
+        carregarNotas();
+    }
+    function fecharNotas() { document.getElementById('notasModal').style.display = 'none'; }
+    async function carregarNotas() {
+        const r = await (await fetch('/api/notas/' + _notaEid)).json();
+        document.getElementById('notas-form').style.display = r.pode_escrever ? 'block' : 'none';
+        const lista = document.getElementById('notas-lista');
+        if (!r.notas || !r.notas.length) { lista.innerHTML = '<div style="color:var(--text-muted);font-size:0.85rem">Nenhuma anotação ainda.</div>'; return; }
+        lista.innerHTML = r.notas.map(n => `<div class="nota"><div style="display:flex;justify-content:space-between;gap:8px"><small><b>${esc(n.usuario)}</b> · ${esc(n.criado_em)}</small>${r.pode_escrever && (r.admin || r.eu === n.usuario) ? `<button class="btn-mini danger" title="Excluir" onclick="excluirNota(${n.id})"><i class="fa-solid fa-trash"></i></button>` : ''}</div><div class="txt">${esc(n.texto)}</div></div>`).join('');
+    }
+    async function salvarNota() {
+        const t = document.getElementById('notas-texto').value.trim();
+        if (!t) return;
+        const r = await (await fetch('/api/notas/' + _notaEid + '/adicionar', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ texto: t }) })).json();
+        if (!r.ok) return alert(r.msg || 'Não foi possível salvar.');
+        document.getElementById('notas-texto').value = '';
+        carregarNotas();
+    }
+    async function excluirNota(id) {
+        if (!confirm('Excluir esta anotação?')) return;
+        await fetch('/api/notas/excluir/' + id, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: '{}' });
+        carregarNotas();
+    }
+    async function carregarHistorico(host) {
+        const box = document.getElementById('notas-hist');
+        box.innerHTML = '<small style="color:var(--text-muted)">Carregando histórico...</small>';
+        const r = await (await fetch('/api/historico/' + encodeURIComponent(host))).json();
+        if (!r.eventos || !r.eventos.length) { box.innerHTML = '<small style="color:var(--text-muted)">Sem histórico de disponibilidade ainda (o sistema registra cada vez que o equipamento liga ou desliga).</small>'; return; }
+        const disp = r.disponibilidade_7d === null ? '' : `<div style="font-weight:600;margin-bottom:4px">Disponibilidade (7 dias): ${r.disponibilidade_7d}%</div>`;
+        box.innerHTML = disp + '<div style="font-size:0.75rem;color:var(--text-muted);margin-bottom:2px">Últimas mudanças de estado</div>' +
+            r.eventos.slice(0, 8).map(e => `<div class="hist-ev"><span>${e.online ? '🟢 Ficou online' : '🔴 Ficou offline'}</span><span style="color:var(--text-muted)">${esc(e.ts)}</span></div>`).join('');
+    }
+    // No celular, fecha o menu ao escolher uma opção
+    document.addEventListener('click', e => { if (e.target.closest('.sidebar .nav-item')) document.body.classList.remove('menu-open'); });
+</script>
+</body>
+</html>

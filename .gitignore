@@ -1,0 +1,25 @@
+﻿# --- Dados e segredos locais (banco, chave de criptografia, log, known_hosts) ---
+data/
+.env
+*.db
+*.log
+*.pem
+*.key
+
+# --- Binários de terceiros (licenças próprias: instale pelo assistente ou manualmente) ---
+tools/
+paexec.exe
+DelProf2.exe
+
+# --- Personalização local ---
+popup-logo.png
+
+# --- Python / editor / SO ---
+__pycache__/
+*.pyc
+.vscode/
+.idea/
+Thumbs.db
+
+# imagem de fundo da empresa (local)
+imagens/
