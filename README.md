@@ -106,6 +106,16 @@ Abra `http://127.0.0.1:5050/setup` **no próprio computador do servidor** (por s
 - **Sobre:** versão, o que o sistema faz, **Criadores** (fixos) e **Equipe**. O administrador clica em *Escolher* e marca, entre as contas existentes, quem deve aparecer; contas excluídas ou desativadas somem da lista sozinhas.
 - **Atalhos:** `Esc` fecha a janela aberta.
 
+### Trocar a imagem de fundo da tela inicial
+
+A tela com o botão *Entrar no sistema* pode ter uma foto de fundo (escurecida automaticamente para o texto continuar legível). A imagem **não vem no repositório**: ela fica na pasta `imagens/`, ao lado do `app.py`, que é de uso local e não é enviada ao git.
+
+1. Crie a pasta `imagens` ao lado do `app.py` (se ainda não existir).
+2. Coloque lá **uma** imagem `.jpg`, `.jpeg` ou `.png`. Se houver mais de uma, o sistema usa a primeira que encontrar, então deixe só a que você quer.
+3. Atualize a página com **Ctrl + F5** (para o navegador não usar a imagem antiga guardada). Não precisa reiniciar o servidor.
+
+Para **trocar**, apague a imagem antiga e coloque a nova. Para **remover**, esvazie a pasta: a tela volta a usar só o fundo escuro. Dica: use uma imagem horizontal, de preferência 1920×1080 ou maior, e de tom suave, porque ela é esticada para preencher a tela.
+
 ---
 
 ## 6. Usuários e permissões
