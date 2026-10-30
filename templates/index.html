@@ -829,9 +829,9 @@
         function switchTab(unitName) { if (activeController) activeController.abort(); activeController = new AbortController(); document.querySelectorAll('.unit-container').forEach(d => d.classList.add('hidden')); document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active')); const targetUnit = document.getElementById('unit-'+unitName); const targetBtn = document.getElementById('btn-'+unitName); if(targetUnit) targetUnit.classList.remove('hidden'); if(targetBtn) targetBtn.classList.add('active'); document.getElementById('page-title').innerText = "Dashboard: " + unitName; document.getElementById('tableSearch').value = ""; filterTable(); startMonitoring(unitName, activeController.signal); }
         function startMonitoring(unitName, signal) { 
             const container = document.getElementById('unit-'+unitName); const badges = container.querySelectorAll('.status-pill'); 
-            let idx = 0; let checkedDisks = new Set(); let total = badges.length; let online = 0; let offline = 0; 
+            let idx = 0; let checkedDisks = new Set(); let total = badges.length;
             document.getElementById('count-total-'+unitName).innerText = total; 
-            function updateCounters() { if(!signal.aborted) { document.getElementById('count-online-'+unitName).innerText = online; document.getElementById('count-offline-'+unitName).innerText = offline; } } 
+            function updateCounters() { if(!signal.aborted) { const online = container.querySelectorAll('.status-pill.st-online').length; const offline = container.querySelectorAll('.status-pill.st-offline').length; document.getElementById('count-online-'+unitName).innerText = online; document.getElementById('count-offline-'+unitName).innerText = offline; } }
             function checkNext() { 
                 if (signal.aborted) return; 
                 if (idx >= badges.length) { setTimeout(() => { if(!signal.aborted) { idx=0; checkNext(); } }, 5000); return; } 
@@ -839,8 +839,8 @@
                 if (host === 'N/D' || host.includes('SEM IP')) { el.className = "status-pill"; el.style.opacity = "0.5"; txtSpan.textContent = "-"; idx++; setTimeout(checkNext, 20); return; } 
                 fetch('/api/check/' + encodeURIComponent(host), { signal: signal }).then(r => r.json()).then(data => { 
                     if (signal.aborted) return; document.getElementById('ip-'+id).innerText = data.ip; el.classList.remove('st-loading', 'st-online', 'st-offline'); 
-                    if(data.online) { el.classList.add('st-online'); txtSpan.textContent = "ONLINE"; if(!checkedDisks.has(id)) online++; if (tipo === 'PC' && !checkedDisks.has(id)) { checkDisk(host, id, signal); checkedDisks.add(id); } } 
-                    else { el.classList.add('st-offline'); txtSpan.textContent = "OFFLINE"; if(!checkedDisks.has(id)) offline++; } 
+                    if(data.online) { el.classList.add('st-online'); txtSpan.textContent = "ONLINE"; if (tipo === 'PC' && !checkedDisks.has(id)) { checkDisk(host, id, signal); checkedDisks.add(id); } } 
+                    else { el.classList.add('st-offline'); txtSpan.textContent = "OFFLINE"; } 
                     updateCounters(); 
                 }).catch(e => {}); 
                 idx++; setTimeout(checkNext, 50); 
